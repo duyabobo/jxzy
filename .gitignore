@@ -1,0 +1,93 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go test command
+go test -v *.test
+
+# Go workspace file
+go.work
+
+# Binary files
+**/gateway
+**/context
+**/prompt
+**/llm
+**/rag
+
+# Build directories
+build/
+dist/
+
+# Log files
+**/logs/*.log
+**/logs/*.log.*
+logs/
+*.log
+
+# Configuration files with sensitive data
+**/.env
+.env
+**/*-local.yaml
+**/*-dev.yaml
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Coverage files
+coverage.out
+coverage.html
+*.cover
+
+# Dependency directories
+vendor/
+
+# Go sum files backup
+go.sum.backup
+
+# Air tmp directories (if using air for hot reloading)
+tmp/
+
+# Docker volumes and data
+docker-data/
+mysql_data/
+redis_data/
+etcd_data/
+prometheus_data/
+grafana_data/
+
+# Runtime storage
+**/storage/documents/*
+!**/storage/documents/.gitkeep
+
+# Generated protobuf files (keeping source .proto files)
+**/pb/*.pb.go
+**/*_grpc.pb.go
+
+# Goctl generated files timestamp
+.goctl/
