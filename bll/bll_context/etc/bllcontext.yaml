@@ -29,7 +29,3 @@ BsRagRpc:
   Target: 127.0.0.1:8082
   NonBlock: true
   Timeout: 600000
-
-# 百炼API配置
-Bailian:
-  api_key: "sk-07b12c7d9c184d0296ee4d54f4eef551"
