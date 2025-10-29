@@ -30,7 +30,8 @@ func NewVectorSearchLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Vect
 // 向量相似度搜索
 func (l *VectorSearchLogic) VectorSearch(in *bs_rag.VectorSearchRequest) (*bs_rag.VectorSearchResponse, error) {
 	// 参数验证
-	if len(in.QueryVector) == 0 {
+	if in.QueryText == "" {
+		l.Logger.Errorf("QueryText is required")
 		return &bs_rag.VectorSearchResponse{
 			Results:      []*bs_rag.VectorSearchResult{},
 			TotalCount:   0,
@@ -38,18 +39,25 @@ func (l *VectorSearchLogic) VectorSearch(in *bs_rag.VectorSearchRequest) (*bs_ra
 		}, nil
 	}
 
+	// 自动生成查询向量
+	l.Logger.Infof("Generating query vector from text, length: %d", len(in.QueryText))
+	queryVector, err := l.svcCtx.EmbeddingService.GenerateEmbedding(in.QueryText)
+	if err != nil {
+		l.Logger.Errorf("Failed to generate embedding for query text: %v", err)
+		return &bs_rag.VectorSearchResponse{
+			Results:      []*bs_rag.VectorSearchResult{},
+			TotalCount:   0,
+			SearchTimeMs: 0,
+		}, nil
+	}
+	l.Logger.Debugf("Generated query vector, length: %d", len(queryVector))
+
 	if in.TopK <= 0 {
 		in.TopK = 10
 	}
 
 	if in.CollectionName == "" {
 		in.CollectionName = consts.DefaultCollectionName
-	}
-
-	// 转换向量类型
-	queryVector := make([]float32, len(in.QueryVector))
-	for i, v := range in.QueryVector {
-		queryVector[i] = float32(v)
 	}
 
 	// 执行搜索

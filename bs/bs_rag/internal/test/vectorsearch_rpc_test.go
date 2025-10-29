@@ -42,7 +42,7 @@ func TestVectorSearch(t *testing.T) {
 	}
 
 	req := &bs_rag.VectorSearchRequest{
-		QueryVector:    CreateTestQueryVector(int(collectionResp.VectorDimension)), // 使用集合的实际维度
+		QueryText:      "测试查询文本", // 使用文本查询，自动向量化
 		TopK:           5,
 		MinScore:       0,
 		CollectionName: "test_collection",

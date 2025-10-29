@@ -2,6 +2,7 @@ package test
 
 import (
 	"flag"
+	"fmt"
 	"sync"
 	"testing"
 
@@ -51,17 +52,10 @@ func SetupTestEnvironment() *server.BsRagServiceServer {
 
 // CreateTestVectorDocument 创建测试向量文档
 func CreateTestVectorDocument(id string, dimension int) *bs_rag.VectorDocument {
-	// 生成标准化的向量数据 - 范围在[0,1]之间
-	vector := make([]float32, dimension)
-	for i := 0; i < dimension; i++ {
-		vector[i] = float32(i+1) / float32(dimension) // 生成 [0.2, 0.4, 0.6, 0.8, 1.0] 类似的值
-	}
-
 	return &bs_rag.VectorDocument{
 		Id:      id,
-		Vector:  vector,
-		Content: "Test content for document " + id,
-		// 简化metadata，只保留必要的字符串字段
+		Text:    fmt.Sprintf("Test document content for %s with some text to vectorize", id),
+		Content: fmt.Sprintf("Test content for document %s", id),
 		Metadata: map[string]string{
 			"source": "test",
 		},

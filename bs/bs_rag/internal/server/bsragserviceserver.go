@@ -45,3 +45,9 @@ func (s *BsRagServiceServer) GetCollectionInfo(ctx context.Context, in *bs_rag.C
 	l := logic.NewGetCollectionInfoLogic(ctx, s.svcCtx)
 	return l.GetCollectionInfo(in)
 }
+
+// 向量化文本
+func (s *BsRagServiceServer) VectorizeText(ctx context.Context, in *bs_rag.VectorizeTextRequest) (*bs_rag.VectorizeTextResponse, error) {
+	l := logic.NewVectorizeTextLogic(ctx, s.svcCtx)
+	return l.VectorizeText(in)
+}

@@ -51,7 +51,7 @@ func main() {
 		Documents: []*bs_rag.VectorDocument{
 			{
 				Id:       "doc1",
-				Vector:   []float32{0.1, 0.2, 0.3, 0.4, 0.5},
+				Text:     "测试文档内容",
 				Metadata: map[string]string{"source": "test", "type": "document"},
 				Content:  "This is a test document for vector insertion",
 			},
@@ -69,7 +69,7 @@ func main() {
 	// 测试向量搜索
 	fmt.Println("\n3. Testing VectorSearch...")
 	searchReq := &bs_rag.VectorSearchRequest{
-		QueryVector:    []float32{0.1, 0.2, 0.3, 0.4, 0.5},
+		QueryText:      "测试查询文本",
 		TopK:           5,
 		MinScore:       0.5,
 		CollectionName: "test",

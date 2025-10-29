@@ -9,6 +9,7 @@ type Config struct {
 	DashVector  DashVectorConfig  `json:"DashVector"`
 	Collections CollectionsConfig `json:"Collections"`
 	VectorDB    VectorDBConfig    `json:"VectorDB"`
+	Bailian     BailianConfig     `json:"Bailian"`
 }
 
 type VectorDBConfig struct {
@@ -42,4 +43,8 @@ type DashVectorConfig struct {
 type CollectionsConfig struct {
 	MaxCollections            int `json:"MaxCollections"`
 	MaxDocumentsPerCollection int `json:"MaxDocumentsPerCollection"`
+}
+
+type BailianConfig struct {
+	APIKey string `json:"APIKey"`
 }

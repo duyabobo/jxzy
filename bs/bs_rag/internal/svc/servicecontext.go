@@ -2,14 +2,16 @@ package svc
 
 import (
 	"fmt"
+	"jxzy/bs/bs_rag/internal/common"
 	"jxzy/bs/bs_rag/internal/config"
 	"jxzy/bs/bs_rag/internal/provider/factory"
 	"jxzy/bs/bs_rag/internal/provider/types"
 )
 
 type ServiceContext struct {
-	Config         config.Config
-	VectorProvider types.VectorProvider
+	Config           config.Config
+	VectorProvider   types.VectorProvider
+	EmbeddingService *common.EmbeddingService
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -36,8 +38,12 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		panic(fmt.Sprintf("Failed to create vector provider: %v", err))
 	}
 
+	// 初始化 EmbeddingService
+	embeddingService := common.NewEmbeddingService(c.Bailian.APIKey)
+
 	return &ServiceContext{
-		Config:         c,
-		VectorProvider: vectorProvider,
+		Config:           c,
+		VectorProvider:   vectorProvider,
+		EmbeddingService: embeddingService,
 	}
 }

@@ -26,6 +26,8 @@ type BsRagServiceClient interface {
 	VectorDelete(ctx context.Context, in *VectorDeleteRequest, opts ...grpc.CallOption) (*VectorDeleteResponse, error)
 	// 获取集合信息
 	GetCollectionInfo(ctx context.Context, in *CollectionInfoRequest, opts ...grpc.CallOption) (*CollectionInfoResponse, error)
+	// 向量化文本
+	VectorizeText(ctx context.Context, in *VectorizeTextRequest, opts ...grpc.CallOption) (*VectorizeTextResponse, error)
 }
 
 type bsRagServiceClient struct {
@@ -72,6 +74,15 @@ func (c *bsRagServiceClient) GetCollectionInfo(ctx context.Context, in *Collecti
 	return out, nil
 }
 
+func (c *bsRagServiceClient) VectorizeText(ctx context.Context, in *VectorizeTextRequest, opts ...grpc.CallOption) (*VectorizeTextResponse, error) {
+	out := new(VectorizeTextResponse)
+	err := c.cc.Invoke(ctx, "/bs_rag.BsRagService/VectorizeText", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // BsRagServiceServer is the server API for BsRagService service.
 // All implementations must embed UnimplementedBsRagServiceServer
 // for forward compatibility
@@ -84,6 +95,8 @@ type BsRagServiceServer interface {
 	VectorDelete(context.Context, *VectorDeleteRequest) (*VectorDeleteResponse, error)
 	// 获取集合信息
 	GetCollectionInfo(context.Context, *CollectionInfoRequest) (*CollectionInfoResponse, error)
+	// 向量化文本
+	VectorizeText(context.Context, *VectorizeTextRequest) (*VectorizeTextResponse, error)
 	mustEmbedUnimplementedBsRagServiceServer()
 }
 
@@ -102,6 +115,9 @@ func (UnimplementedBsRagServiceServer) VectorDelete(context.Context, *VectorDele
 }
 func (UnimplementedBsRagServiceServer) GetCollectionInfo(context.Context, *CollectionInfoRequest) (*CollectionInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCollectionInfo not implemented")
+}
+func (UnimplementedBsRagServiceServer) VectorizeText(context.Context, *VectorizeTextRequest) (*VectorizeTextResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method VectorizeText not implemented")
 }
 func (UnimplementedBsRagServiceServer) mustEmbedUnimplementedBsRagServiceServer() {}
 
@@ -188,6 +204,24 @@ func _BsRagService_GetCollectionInfo_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BsRagService_VectorizeText_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VectorizeTextRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BsRagServiceServer).VectorizeText(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/bs_rag.BsRagService/VectorizeText",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BsRagServiceServer).VectorizeText(ctx, req.(*VectorizeTextRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // BsRagService_ServiceDesc is the grpc.ServiceDesc for BsRagService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -210,6 +244,10 @@ var BsRagService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetCollectionInfo",
 			Handler:    _BsRagService_GetCollectionInfo_Handler,
+		},
+		{
+			MethodName: "VectorizeText",
+			Handler:    _BsRagService_VectorizeText_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

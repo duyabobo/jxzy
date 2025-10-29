@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	contextpb "jxzy/bll/bll_context/bll_context"
-	"jxzy/bll/bll_context/internal/common"
 	"jxzy/bll/bll_context/internal/svc"
 	"jxzy/bs/bs_rag/bs_rag"
 	consts "jxzy/common/const"
@@ -21,7 +20,6 @@ type AddVectorKnowledgeLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
 	logx.Logger
-	embeddingService *common.EmbeddingService
 }
 
 func NewAddVectorKnowledgeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddVectorKnowledgeLogic {
@@ -29,10 +27,9 @@ func NewAddVectorKnowledgeLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	serviceLogger := logger.NewServiceLogger("bll-context").WithContext(ctx)
 
 	return &AddVectorKnowledgeLogic{
-		ctx:              ctx,
-		svcCtx:           svcCtx,
-		Logger:           serviceLogger,
-		embeddingService: common.NewEmbeddingService(svcCtx.Config.Bailian.APIKey),
+		ctx:    ctx,
+		svcCtx: svcCtx,
+		Logger: serviceLogger,
 	}
 }
 
@@ -54,28 +51,16 @@ func (l *AddVectorKnowledgeLogic) AddVectorKnowledge(in *contextpb.AddVectorKnow
 	vectorId := l.generateVectorId(in.Summary, in.Content)
 	l.Logger.Infof("Generated vector ID: %s", vectorId)
 
-	// 3. 生成向量表示
-	vector, err := l.embeddingService.GenerateEmbedding(in.Summary)
-	if err != nil {
-		l.Logger.Errorf("Failed to generate embedding for summary '%s': %v", in.Summary, err)
-		return &contextpb.AddVectorKnowledgeResponse{
-			VectorId: vectorId, // 即使embedding失败，也要返回向量ID
-			Success:  false,
-			Message:  fmt.Sprintf("生成向量表示失败: %v", err),
-		}, nil
-	}
-
-	l.Logger.Debugf("Generated embedding vector for summary '%s': length=%d", in.Summary, len(vector))
-
-	// 4. 构建向量文档
+	// 3. 构建向量文档（使用text字段，让bs_rag自动向量化）
 	document := &bs_rag.VectorDocument{
-		Id:     vectorId,
-		Vector: vector,
+		Id:   vectorId,
+		Text: in.Summary, // 使用text字段，bs_rag会自动生成向量
 		Metadata: map[string]string{
 			"summary": in.Summary,
 			"content": in.Content,
 			"user_id": in.UserId,
 		},
+		Content: in.Content,
 	}
 
 	// 5. 检查RAG服务是否可用

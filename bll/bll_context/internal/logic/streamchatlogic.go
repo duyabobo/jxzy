@@ -11,7 +11,6 @@ import (
 	"time"
 
 	contextpb "jxzy/bll/bll_context/bll_context"
-	"jxzy/bll/bll_context/internal/common"
 	"jxzy/bll/bll_context/internal/model"
 	"jxzy/bll/bll_context/internal/svc"
 	"jxzy/bs/bs_llm/bs_llm"
@@ -28,7 +27,6 @@ type StreamChatLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
 	logx.Logger
-	embeddingService *common.EmbeddingService
 }
 
 func NewStreamChatLogic(ctx context.Context, svcCtx *svc.ServiceContext) *StreamChatLogic {
@@ -36,10 +34,9 @@ func NewStreamChatLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Stream
 	serviceLogger := logger.NewServiceLogger("bll-context").WithContext(ctx)
 
 	return &StreamChatLogic{
-		ctx:              ctx,
-		svcCtx:           svcCtx,
-		Logger:           serviceLogger,
-		embeddingService: common.NewEmbeddingService(svcCtx.Config.Bailian.APIKey),
+		ctx:    ctx,
+		svcCtx: svcCtx,
+		Logger: serviceLogger,
 	}
 }
 
@@ -477,21 +474,6 @@ func (l *StreamChatLogic) extractKeySentencesFallback(text string) ([]string, er
 	return keySentences, nil
 }
 
-// generateQueryVector 生成查询向量
-// 使用阿里云百炼 Embedding API 生成真实的向量
-func (l *StreamChatLogic) generateQueryVector(sentence string) []float32 {
-	// 调用 EmbeddingService 生成向量
-	vector, err := l.embeddingService.GenerateEmbedding(sentence)
-	if err != nil {
-		l.Logger.Errorf("Failed to generate embedding for sentence '%s': %v", sentence, err)
-		// 返回空向量，让调用方处理错误
-		return make([]float32, consts.DashVectorDefaultDimension) // DefaultEmbeddingDimension
-	}
-
-	l.Logger.Debugf("Generated embedding vector for sentence '%s': length=%d", sentence, len(vector))
-	return vector
-}
-
 // searchRAGConcurrently 并发搜索RAG
 func (l *StreamChatLogic) searchRAGConcurrently(keySentences []string, userId string) []string {
 	var ragResults []string
@@ -514,9 +496,9 @@ func (l *StreamChatLogic) searchRAGConcurrently(keySentences []string, userId st
 
 			l.Logger.Infof("Searching RAG for key sentence: %s", sentence)
 
-			// 构建向量查询请求
+			// 构建向量查询请求（使用query_text，让bs_rag自动向量化）
 			ragReq := &bs_rag.VectorSearchRequest{
-				QueryVector:    l.generateQueryVector(sentence),
+				QueryText:      sentence,                     // 使用query_text字段，bs_rag会自动生成向量
 				TopK:           3,                            // 返回前3个最相似的结果
 				MinScore:       0.5,                          // 最小相似度阈值
 				CollectionName: consts.DefaultCollectionName, // 集合名称
