@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package bll_prompt;
+
+option go_package = "./bll_prompt";
+
+// Prompt工程服务
+service BllPromptService {
+  // 占位方法，后续添加具体实现
+  rpc Ping(Empty) returns (Pong);
+}
+
+message Empty {}
+
+message Pong {
+  string message = 1;
+}

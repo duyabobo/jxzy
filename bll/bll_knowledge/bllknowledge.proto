@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package bll_knowledge;
+
+option go_package = "./bll_knowledge";
+
+// 知识库管理服务
+service BllKnowledgeService {
+  // 占位方法，后续添加具体实现
+  rpc Ping(Empty) returns (Pong);
+}
+
+message Empty {}
+
+message Pong {
+  string message = 1;
+}
