@@ -1,0 +1,50 @@
+Name: bs_rag.rpc
+ListenOn: 0.0.0.0:8082
+Timeout: 600000
+
+Log:
+  ServiceName: bs-rag
+  Mode: file
+  Path: ../../logs
+  Level: info
+  Compress: true
+  KeepDays: 7
+  StackCooldownMillis: 100
+  Encoding: json
+  TimeFormat: 2006-01-02T15:04:05.000Z07:00
+  MaxSize: 100
+  MaxBackups: 10
+  Stat: true
+
+# MySQL数据库配置
+MySQL:
+  DataSource: guan:duyabo@tcp(localhost:3306)/guan?charset=utf8mb4&parseTime=true&loc=Local
+
+# Faiss向量数据库配置
+Faiss:
+  IndexPath: ./data/faiss_indexes    # Faiss索引文件存储路径
+  IndexType: "IVFFlat"               # 索引类型: IVFFlat, Flat, HNSW
+  Nlist: 100                         # IVF索引的聚类中心数量
+  Nprobe: 10                         # IVF搜索时的聚类中心数量
+  M: 16                              # HNSW索引的层数
+  EfConstruction: 200                # HNSW构建时的搜索深度
+  EfSearch: 50                       # HNSW搜索时的搜索深度
+  MetricType: "L2"                   # 距离度量类型: L2, IP(内积), COSINE
+
+# 阿里云 DashVector 向量数据库配置
+DashVector:
+  Endpoint: "https://vrs-cn-elo4eb3wt00070.dashvector.cn-beijing.aliyuncs.com"  # DashVector 服务端点
+  APIKey: "sk-q70ZPtuYLHzmBvve5q5XbPyMMjq8590D962337B2411F081487231AC8472BD"                              # API 密钥
+  Region: "cn-beijing"                                    # 地域
+  Timeout: 30                                              # 请求超时时间（秒）
+  Headers: {}                                              # 自定义请求头
+
+# 向量数据库集合配置
+Collections:
+  MaxCollections: 100                # 最大集合数量
+  MaxDocumentsPerCollection: 1000000 # 每个集合最大文档数
+
+# 向量数据库配置
+VectorDB:
+  Type: "dashvector"                  # 向量数据库类型: faiss, dashvector, milvus, pinecone, weaviate, mock
+  Config: {}                         # 具体配置（mock 类型不需要配置）

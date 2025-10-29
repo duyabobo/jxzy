@@ -10,9 +10,6 @@ require (
 	github.com/zeromicro/go-zero v1.6.0
 	google.golang.org/grpc v1.59.0
 	google.golang.org/protobuf v1.31.0
-	// 数据库相关
-	github.com/go-sql-driver/mysql v1.7.1
-	github.com/zeromicro/go-zero/tools/goctl v1.6.0
 )
 
 require (
@@ -99,3 +96,10 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
+
+require (
+	github.com/go-sql-driver/mysql v1.7.1
+	golang.org/x/sync v0.16.0
+)
+
+require github.com/fsnotify/fsnotify v1.6.0 // indirect

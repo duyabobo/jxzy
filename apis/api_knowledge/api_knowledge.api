@@ -1,0 +1,43 @@
+syntax = "v1"
+
+type (
+	// 添加知识库请求
+	AddKnowledgeRequest {
+		Summary string `json:"summary"` // 知识库总结，用于向量化
+		Content string `json:"content"` // 知识库内容
+		UserId  string `json:"user_id"` // 用户ID
+	}
+
+	// 添加知识库响应
+	AddKnowledgeResponse {
+		VectorId string `json:"vector_id"` // 向量ID
+		Success  bool   `json:"success"`   // 是否成功
+		Message  string `json:"message"`   // 响应消息
+	}
+
+	// 删除知识库请求
+	DeleteKnowledgeRequest {
+		VectorId string `json:"vector_id"` // 向量ID
+		UserId   string `json:"user_id"`   // 用户ID
+	}
+
+	// 删除知识库响应
+	DeleteKnowledgeResponse {
+		Success bool   `json:"success"` // 是否成功
+		Message string `json:"message"` // 响应消息
+	}
+)
+
+@server(
+	prefix: /api/v1/knowledge
+	group: knowledge
+)
+service api_knowledge {
+	@doc "添加知识库到向量数据库"
+	@handler AddKnowledge
+	post /add (AddKnowledgeRequest) returns (AddKnowledgeResponse)
+	
+	@doc "从向量数据库删除知识库"
+	@handler DeleteKnowledge
+	post /delete (DeleteKnowledgeRequest) returns (DeleteKnowledgeResponse)
+}

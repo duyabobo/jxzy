@@ -1,0 +1,35 @@
+Name: bllscontext.rpc
+ListenOn: 0.0.0.0:8080
+Timeout: 600000
+
+Log:
+  ServiceName: bll-context
+  Mode: file
+  Path: ../../logs
+  Level: info
+  Compress: true
+  KeepDays: 7
+  StackCooldownMillis: 100
+  Encoding: json
+  TimeFormat: 2006-01-02T15:04:05.000Z07:00
+  MaxSize: 100
+  MaxBackups: 10
+  Stat: true
+
+# MySQL数据库配置
+MySQL:
+  DataSource: guan:duyabo@tcp(localhost:3306)/guan?charset=utf8mb4&parseTime=true&loc=Local
+
+BsLlmRpc:
+  Target: 127.0.0.1:8081
+  NonBlock: true
+  Timeout: 600000
+
+BsRagRpc:
+  Target: 127.0.0.1:8082
+  NonBlock: true
+  Timeout: 600000
+
+# 百炼API配置
+Bailian:
+  api_key: "sk-07b12c7d9c184d0296ee4d54f4eef551"

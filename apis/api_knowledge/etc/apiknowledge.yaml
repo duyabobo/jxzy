@@ -1,0 +1,23 @@
+Name: api_knowledge
+Host: 0.0.0.0
+Port: 8889
+
+Log:
+  ServiceName: api-knowledge
+  Mode: file
+  Path: ../../logs
+  Level: info
+  Compress: true
+  KeepDays: 7
+  StackCooldownMillis: 100
+  Encoding: json
+  TimeFormat: 2006-01-02T15:04:05.000Z07:00
+  MaxSize: 100
+  MaxBackups: 10
+  Stat: true
+
+# RPC客户端配置
+BllContextRpc:
+  Target: 127.0.0.1:8080
+  NonBlock: true
+  Timeout: 600000

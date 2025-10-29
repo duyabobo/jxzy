@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package bs_llm;
+
+option go_package = "./bs_llm";
+
+// ====== 消息定义 ======
+
+// LLM调用请求
+message LLMRequest {
+  repeated ChatMessage messages = 1;     // 对话消息列表
+  string scene_code = 2;                 // 场景编码（必填）
+  map<string, string> extra_params = 3;  // 额外参数
+  string user_id = 4;                    // 用户ID
+}
+
+// 聊天消息
+message ChatMessage {
+  string role = 1;                       // 角色: system/user/assistant
+  string content = 2;                    // 消息内容
+}
+
+// 流式LLM响应
+message StreamLLMResponse {
+  string delta = 1;                      // 增量内容
+  string model_id = 2;                   // 使用的模型ID
+  bool finished = 3;                     // 是否结束
+  string finish_reason = 4;              // 结束原因: stop/length/content_filter
+  LLMUsage usage = 5;                    // token使用情况(仅在finished=true时返回)
+}
+
+// LLM Token使用情况
+message LLMUsage {
+  int64 prompt_tokens = 1;               // 输入token数
+  int64 completion_tokens = 2;           // 输出token数
+  int64 total_tokens = 3;                // 总token数
+}
+
+// 非流式LLM响应
+message LLMResponse {
+  string completion = 1;                     // 完整的回答内容
+  string model_id = 2;                      // 使用的模型ID
+  string finish_reason = 3;                 // 结束原因: stop/length/content_filter
+  LLMUsage usage = 4;                       // token使用情况
+}
+
+// ====== 服务定义 ======
+
+service BsLlmService {
+  // 流式LLM调用
+  rpc StreamLLM(LLMRequest) returns (stream StreamLLMResponse);
+
+  // 非流式LLM调用
+  rpc LLM(LLMRequest) returns (LLMResponse);
+}

@@ -1,0 +1,25 @@
+Name: bs_llm.rpc
+ListenOn: 0.0.0.0:8081
+Timeout: 600000
+
+Log:
+  ServiceName: bs-llm
+  Mode: file
+  Path: ../../logs
+  Level: info
+  Compress: true
+  KeepDays: 7
+  StackCooldownMillis: 100
+  Encoding: json
+  TimeFormat: 2006-01-02T15:04:05.000Z07:00
+  MaxSize: 100
+  MaxBackups: 10
+  Stat: true
+
+# MySQL数据库配置
+MySQL:
+  DataSource: guan:duyabo@tcp(localhost:3306)/guan?charset=utf8mb4&parseTime=true&loc=Local
+
+# LLM供应商API密钥配置
+DoubaoAPIKey: 341cbbda-d32f-44b6-aa95-642a17bdcc7d
+BailianAPIKey: sk-07b12c7d9c184d0296ee4d54f4eef551

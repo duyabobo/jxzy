@@ -1,50 +1,25 @@
-# Binaries for programs and plugins
+# Go 编译的可执行文件
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
 
-# Test binary, built with `go test -c`
-*.test
-
-# Output of the go test command
-go test -v *.test
-
-# Go workspace file
-go.work
-
-# Binary files
-**/gateway
-**/context
-**/prompt
-**/llm
-**/rag
-
-# Build directories
-build/
-dist/
-
-# Log files
-**/logs/*.log
-**/logs/*.log.*
-logs/
+# 日志文件
 *.log
 
-# Configuration files with sensitive data
-**/.env
-.env
-**/*-local.yaml
-**/*-dev.yaml
+# 临时文件
+*.tmp
+*.temp
 
-# IDE files
+# IDE 文件
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# OS generated files
+# OS 文件
 .DS_Store
 .DS_Store?
 ._*
@@ -53,41 +28,33 @@ logs/
 ehthumbs.db
 Thumbs.db
 
-# Temporary files
-*.tmp
-*.temp
-tmp/
-temp/
+# Go 相关
+*.out
+go.work
 
-# Coverage files
-coverage.out
-coverage.html
-*.cover
-
-# Dependency directories
+# 依赖目录
 vendor/
 
-# Go sum files backup
-go.sum.backup
+# 环境变量文件
+.env
+.env.local
+.env.*.local
 
-# Air tmp directories (if using air for hot reloading)
-tmp/
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
 
-# Docker volumes and data
-docker-data/
-mysql_data/
-redis_data/
-etcd_data/
-prometheus_data/
-grafana_data/
+# 备份文件
+*.bak
+*.backup
 
-# Runtime storage
-**/storage/documents/*
-!**/storage/documents/.gitkeep
 
-# Generated protobuf files (keeping source .proto files)
-**/pb/*.pb.go
-**/*_grpc.pb.go
+bin
+logs
 
-# Goctl generated files timestamp
-.goctl/
+apis/api_chat/chat-api-server
+bll/bll_context/bll-context-server
+bs/bs_llm/bs-llm-server
+bs/bs_rag/bs-rag-server
+apis/api_knowledge/api-knowledge-server

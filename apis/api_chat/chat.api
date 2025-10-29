@@ -1,0 +1,49 @@
+syntax = "v1"
+
+info (
+	title: "JXZY AI Chat Service API"
+	desc: "基于三层微服务架构的AI聊天服务API"
+	author: "JXZY Team"
+	version: "v0.1"
+)
+
+// ====== 聊天相关结构体 ======
+
+type (
+	// 聊天请求
+	ChatRequest {
+		UserId    string `json:"user_id"`             // 用户ID
+		Message   string `json:"message"`             // 用户消息内容
+		SessionId string `json:"session_id,optional"` // 会话ID，为空时自动创建
+		SceneCode string `json:"scene_code"`          // 业务场景编码，必填
+	}
+
+	// 流式聊天响应数据
+	StreamChatData {
+		SessionId string      `json:"session_id"`     // 会话ID
+		SceneCode string      `json:"scene_code"`     // 场景编码
+		Delta     string      `json:"delta"`          // 增量内容
+		Finished  bool        `json:"finished"`       // 是否结束
+		Usage     *TokenUsage `json:"usage,optional"` // token使用情况(仅在finished=true时返回)
+	}
+
+	// Token使用情况
+	TokenUsage {
+		PromptTokens int64 `json:"prompt_tokens"` // 输入token数
+		ReplyTokens  int64 `json:"reply_tokens"`  // 输出token数
+		TotalTokens  int64 `json:"total_tokens"`  // 总token数
+	}
+)
+
+// ====== 服务接口定义 ======
+
+@server (
+	prefix: /api/v1
+	group:  chat
+	middleware: Cors
+)
+service chat-api {
+	// 流式聊天接口 - SSE
+	@handler StreamChatHandler
+	post /chat/stream (ChatRequest) returns (StreamChatData)
+}

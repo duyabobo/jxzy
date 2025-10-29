@@ -1,0 +1,20 @@
+CREATE TABLE llm_completion (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
+    scene_code VARCHAR(50) NOT NULL COMMENT '关联的场景编码，对应llm_scene表的scene_code',
+    prompt TEXT NOT NULL COMMENT '用户输入的提示词',
+    completion TEXT COMMENT 'LLM返回的回答内容',
+    input_tokens INT UNSIGNED NOT NULL COMMENT '输入的token数量',
+    output_tokens INT UNSIGNED NOT NULL COMMENT '输出的token数量',
+    total_tokens INT UNSIGNED NOT NULL COMMENT '总token数量（input_tokens + output_tokens）',
+    model_code VARCHAR(50) NOT NULL COMMENT '实际调用的模型编码',
+    provider_code VARCHAR(50) NOT NULL COMMENT '实际调用的提供商编码',
+    request_id VARCHAR(100) NOT NULL COMMENT '请求唯一标识（如API返回的request-id）',
+    status TINYINT NOT NULL COMMENT '请求状态（1-成功，0-失败，2-超时）',
+    error_msg TEXT COMMENT '错误信息（状态为失败时记录）',
+    response_time DECIMAL(10,3) COMMENT '响应时间（秒）',
+    user_id VARCHAR(50) NOT NULL COMMENT '调用用户ID（如有）',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间（问答发生时间）',
+    INDEX idx_scene_code (scene_code),
+    INDEX idx_created_at (created_at),
+    INDEX idx_request_id (request_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='LLM问答记录明细表';

@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+package bll_context;
+
+option go_package = "./bll_context";
+
+// ====== 聊天相关消息定义 ======
+
+message ChatRequest {
+  string message = 1;                 // 用户消息内容
+  string session_id = 2;              // 会话ID，为空时自动创建
+  string scene_code = 3;              // 业务场景编码，必填
+  string user_id = 4;                 // 用户ID
+}
+
+message StreamChatResponse {
+  string session_id = 1;                 // 会话ID
+  string scene_code = 2;                 // 场景编码
+  string delta = 3;                      // 增量内容
+  bool finished = 4;                     // 是否结束
+  TokenUsage usage = 5;                  // token使用情况(仅在finished=true时返回，可选)
+}
+
+message TokenUsage {
+  int64 prompt_tokens = 1;            // 输入token数
+  int64 reply_tokens = 2;             // 输出token数
+  int64 total_tokens = 3;             // 总token数
+}
+
+// ====== 知识库管理相关消息定义 ======
+
+message AddVectorKnowledgeRequest {
+  string summary = 1;                 // 用于向量化的总结句子
+  string content = 2;                 // 知识库内容
+  string user_id = 3;                 // 用户ID
+}
+
+message AddVectorKnowledgeResponse {
+  string vector_id = 1;               // 向量ID（summary和content的MD5）
+  bool success = 2;                   // 操作是否成功
+  string message = 3;                 // 响应消息
+}
+
+message DeleteVectorKnowledgeRequest {
+  string vector_id = 1;               // 向量ID
+  string user_id = 2;                 // 用户ID
+}
+
+message DeleteVectorKnowledgeResponse {
+  bool success = 1;                   // 操作是否成功
+  string message = 2;                 // 响应消息
+}
+
+// ====== 服务定义 ======
+
+service BllContextService {
+  // 流式聊天接口
+  rpc StreamChat(ChatRequest) returns (stream StreamChatResponse);
+  
+  // 添加知识库到向量数据库
+  rpc AddVectorKnowledge(AddVectorKnowledgeRequest) returns (AddVectorKnowledgeResponse);
+  
+  // 从向量数据库删除知识库
+  rpc DeleteVectorKnowledge(DeleteVectorKnowledgeRequest) returns (DeleteVectorKnowledgeResponse);
+}
