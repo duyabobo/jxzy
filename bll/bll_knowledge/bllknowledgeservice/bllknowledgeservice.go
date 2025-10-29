@@ -13,12 +13,16 @@ import (
 )
 
 type (
-	Empty = bll_knowledge.Empty
-	Pong  = bll_knowledge.Pong
+	AddVectorKnowledgeRequest     = bll_knowledge.AddVectorKnowledgeRequest
+	AddVectorKnowledgeResponse    = bll_knowledge.AddVectorKnowledgeResponse
+	DeleteVectorKnowledgeRequest  = bll_knowledge.DeleteVectorKnowledgeRequest
+	DeleteVectorKnowledgeResponse = bll_knowledge.DeleteVectorKnowledgeResponse
 
 	BllKnowledgeService interface {
-		// 占位方法，后续添加具体实现
-		Ping(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Pong, error)
+		// 添加知识库到向量数据库
+		AddVectorKnowledge(ctx context.Context, in *AddVectorKnowledgeRequest, opts ...grpc.CallOption) (*AddVectorKnowledgeResponse, error)
+		// 从向量数据库删除知识库
+		DeleteVectorKnowledge(ctx context.Context, in *DeleteVectorKnowledgeRequest, opts ...grpc.CallOption) (*DeleteVectorKnowledgeResponse, error)
 	}
 
 	defaultBllKnowledgeService struct {
@@ -32,8 +36,14 @@ func NewBllKnowledgeService(cli zrpc.Client) BllKnowledgeService {
 	}
 }
 
-// 占位方法，后续添加具体实现
-func (m *defaultBllKnowledgeService) Ping(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Pong, error) {
+// 添加知识库到向量数据库
+func (m *defaultBllKnowledgeService) AddVectorKnowledge(ctx context.Context, in *AddVectorKnowledgeRequest, opts ...grpc.CallOption) (*AddVectorKnowledgeResponse, error) {
 	client := bll_knowledge.NewBllKnowledgeServiceClient(m.cli.Conn())
-	return client.Ping(ctx, in, opts...)
+	return client.AddVectorKnowledge(ctx, in, opts...)
+}
+
+// 从向量数据库删除知识库
+func (m *defaultBllKnowledgeService) DeleteVectorKnowledge(ctx context.Context, in *DeleteVectorKnowledgeRequest, opts ...grpc.CallOption) (*DeleteVectorKnowledgeResponse, error) {
+	client := bll_knowledge.NewBllKnowledgeServiceClient(m.cli.Conn())
+	return client.DeleteVectorKnowledge(ctx, in, opts...)
 }

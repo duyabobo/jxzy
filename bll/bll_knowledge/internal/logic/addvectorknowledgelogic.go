@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"strings"
 
-	contextpb "jxzy/bll/bll_context/bll_context"
-	"jxzy/bll/bll_context/internal/svc"
+	knowledgepb "jxzy/bll/bll_knowledge/bll_knowledge"
+	"jxzy/bll/bll_knowledge/internal/svc"
 	"jxzy/bs/bs_rag/bs_rag"
 	consts "jxzy/common/const"
 	"jxzy/common/logger"
@@ -24,7 +24,7 @@ type AddVectorKnowledgeLogic struct {
 
 func NewAddVectorKnowledgeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddVectorKnowledgeLogic {
 	// 使用自定义的 ServiceLogger，在日志中显示服务名
-	serviceLogger := logger.NewServiceLogger("bll-context").WithContext(ctx)
+	serviceLogger := logger.NewServiceLogger("bll-knowledge").WithContext(ctx)
 
 	return &AddVectorKnowledgeLogic{
 		ctx:    ctx,
@@ -34,14 +34,14 @@ func NewAddVectorKnowledgeLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 
 // AddVectorKnowledge 添加知识库到向量数据库
-func (l *AddVectorKnowledgeLogic) AddVectorKnowledge(in *contextpb.AddVectorKnowledgeRequest) (*contextpb.AddVectorKnowledgeResponse, error) {
+func (l *AddVectorKnowledgeLogic) AddVectorKnowledge(in *knowledgepb.AddVectorKnowledgeRequest) (*knowledgepb.AddVectorKnowledgeResponse, error) {
 	l.Logger.Infof("AddVectorKnowledge called with summary: %s, content: %s, user_id: %s",
 		in.Summary, in.Content, in.UserId)
 
 	// 1. 验证输入参数
 	if err := l.validateInput(in); err != nil {
 		l.Logger.Errorf("Input validation failed: %v", err)
-		return &contextpb.AddVectorKnowledgeResponse{
+		return &knowledgepb.AddVectorKnowledgeResponse{
 			Success: false,
 			Message: fmt.Sprintf("输入参数验证失败: %v", err),
 		}, nil
@@ -66,7 +66,7 @@ func (l *AddVectorKnowledgeLogic) AddVectorKnowledge(in *contextpb.AddVectorKnow
 	// 5. 检查RAG服务是否可用
 	if l.svcCtx.RagRpc == nil {
 		l.Logger.Error("RAG service is not available")
-		return &contextpb.AddVectorKnowledgeResponse{
+		return &knowledgepb.AddVectorKnowledgeResponse{
 			VectorId: vectorId, // 即使RAG服务不可用，也要返回向量ID
 			Success:  false,
 			Message:  "RAG服务不可用",
@@ -83,7 +83,7 @@ func (l *AddVectorKnowledgeLogic) AddVectorKnowledge(in *contextpb.AddVectorKnow
 	ragResp, err := l.svcCtx.RagRpc.VectorInsert(l.ctx, ragReq)
 	if err != nil {
 		l.Logger.Errorf("Failed to insert vector to RAG service: %v", err)
-		return &contextpb.AddVectorKnowledgeResponse{
+		return &knowledgepb.AddVectorKnowledgeResponse{
 			VectorId: vectorId, // 即使插入失败，也要返回向量ID
 			Success:  false,
 			Message:  fmt.Sprintf("插入向量到RAG服务失败: %v", err),
@@ -92,7 +92,7 @@ func (l *AddVectorKnowledgeLogic) AddVectorKnowledge(in *contextpb.AddVectorKnow
 
 	l.Logger.Infof("Successfully inserted vector to RAG service, response: %v", ragResp)
 
-	return &contextpb.AddVectorKnowledgeResponse{
+	return &knowledgepb.AddVectorKnowledgeResponse{
 		VectorId: vectorId,
 		Success:  true,
 		Message:  "知识库添加成功",
@@ -100,7 +100,7 @@ func (l *AddVectorKnowledgeLogic) AddVectorKnowledge(in *contextpb.AddVectorKnow
 }
 
 // validateInput 验证输入参数
-func (l *AddVectorKnowledgeLogic) validateInput(in *contextpb.AddVectorKnowledgeRequest) error {
+func (l *AddVectorKnowledgeLogic) validateInput(in *knowledgepb.AddVectorKnowledgeRequest) error {
 	if strings.TrimSpace(in.Summary) == "" {
 		return fmt.Errorf("summary不能为空")
 	}

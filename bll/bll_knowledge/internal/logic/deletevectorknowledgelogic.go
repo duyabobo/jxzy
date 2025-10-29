@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	contextpb "jxzy/bll/bll_context/bll_context"
-	"jxzy/bll/bll_context/internal/svc"
+	knowledgepb "jxzy/bll/bll_knowledge/bll_knowledge"
+	"jxzy/bll/bll_knowledge/internal/svc"
 	"jxzy/bs/bs_rag/bs_rag"
 	consts "jxzy/common/const"
 	"jxzy/common/logger"
@@ -22,7 +22,7 @@ type DeleteVectorKnowledgeLogic struct {
 
 func NewDeleteVectorKnowledgeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *DeleteVectorKnowledgeLogic {
 	// 使用自定义的 ServiceLogger，在日志中显示服务名
-	serviceLogger := logger.NewServiceLogger("bll-context").WithContext(ctx)
+	serviceLogger := logger.NewServiceLogger("bll-knowledge").WithContext(ctx)
 
 	return &DeleteVectorKnowledgeLogic{
 		ctx:    ctx,
@@ -32,13 +32,13 @@ func NewDeleteVectorKnowledgeLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 // DeleteVectorKnowledge 从向量数据库删除知识库
-func (l *DeleteVectorKnowledgeLogic) DeleteVectorKnowledge(in *contextpb.DeleteVectorKnowledgeRequest) (*contextpb.DeleteVectorKnowledgeResponse, error) {
+func (l *DeleteVectorKnowledgeLogic) DeleteVectorKnowledge(in *knowledgepb.DeleteVectorKnowledgeRequest) (*knowledgepb.DeleteVectorKnowledgeResponse, error) {
 	l.Logger.Infof("DeleteVectorKnowledge called with vector_id: %s, user_id: %s", in.VectorId, in.UserId)
 
 	// 1. 验证输入参数
 	if err := l.validateInput(in); err != nil {
 		l.Logger.Errorf("Input validation failed: %v", err)
-		return &contextpb.DeleteVectorKnowledgeResponse{
+		return &knowledgepb.DeleteVectorKnowledgeResponse{
 			Success: false,
 			Message: fmt.Sprintf("输入参数验证失败: %v", err),
 		}, nil
@@ -47,7 +47,7 @@ func (l *DeleteVectorKnowledgeLogic) DeleteVectorKnowledge(in *contextpb.DeleteV
 	// 2. 检查RAG服务是否可用
 	if l.svcCtx.RagRpc == nil {
 		l.Logger.Error("RAG service is not available")
-		return &contextpb.DeleteVectorKnowledgeResponse{
+		return &knowledgepb.DeleteVectorKnowledgeResponse{
 			Success: false,
 			Message: "RAG服务不可用",
 		}, nil
@@ -63,7 +63,7 @@ func (l *DeleteVectorKnowledgeLogic) DeleteVectorKnowledge(in *contextpb.DeleteV
 	ragResp, err := l.svcCtx.RagRpc.VectorDelete(l.ctx, ragReq)
 	if err != nil {
 		l.Logger.Errorf("Failed to delete vector from RAG service: %v", err)
-		return &contextpb.DeleteVectorKnowledgeResponse{
+		return &knowledgepb.DeleteVectorKnowledgeResponse{
 			Success: false,
 			Message: fmt.Sprintf("从RAG服务删除向量失败: %v", err),
 		}, nil
@@ -74,20 +74,20 @@ func (l *DeleteVectorKnowledgeLogic) DeleteVectorKnowledge(in *contextpb.DeleteV
 	// 检查RAG响应中是否有错误信息
 	if ragResp != nil && ragResp.ErrorMessage != "" {
 		l.Logger.Errorf("RAG service returned error: %s", ragResp.ErrorMessage)
-		return &contextpb.DeleteVectorKnowledgeResponse{
+		return &knowledgepb.DeleteVectorKnowledgeResponse{
 			Success: false,
 			Message: fmt.Sprintf("从RAG服务删除向量失败: %s", ragResp.ErrorMessage),
 		}, nil
 	}
 
-	return &contextpb.DeleteVectorKnowledgeResponse{
+	return &knowledgepb.DeleteVectorKnowledgeResponse{
 		Success: true,
 		Message: "知识库删除成功",
 	}, nil
 }
 
 // validateInput 验证输入参数
-func (l *DeleteVectorKnowledgeLogic) validateInput(in *contextpb.DeleteVectorKnowledgeRequest) error {
+func (l *DeleteVectorKnowledgeLogic) validateInput(in *knowledgepb.DeleteVectorKnowledgeRequest) error {
 	if strings.TrimSpace(in.VectorId) == "" {
 		return fmt.Errorf("vector_id不能为空")
 	}

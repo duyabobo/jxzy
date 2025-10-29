@@ -20,10 +20,6 @@ const _ = grpc.SupportPackageIsVersion7
 type BllContextServiceClient interface {
 	// 流式聊天接口
 	StreamChat(ctx context.Context, in *ChatRequest, opts ...grpc.CallOption) (BllContextService_StreamChatClient, error)
-	// 添加知识库到向量数据库
-	AddVectorKnowledge(ctx context.Context, in *AddVectorKnowledgeRequest, opts ...grpc.CallOption) (*AddVectorKnowledgeResponse, error)
-	// 从向量数据库删除知识库
-	DeleteVectorKnowledge(ctx context.Context, in *DeleteVectorKnowledgeRequest, opts ...grpc.CallOption) (*DeleteVectorKnowledgeResponse, error)
 }
 
 type bllContextServiceClient struct {
@@ -66,34 +62,12 @@ func (x *bllContextServiceStreamChatClient) Recv() (*StreamChatResponse, error) 
 	return m, nil
 }
 
-func (c *bllContextServiceClient) AddVectorKnowledge(ctx context.Context, in *AddVectorKnowledgeRequest, opts ...grpc.CallOption) (*AddVectorKnowledgeResponse, error) {
-	out := new(AddVectorKnowledgeResponse)
-	err := c.cc.Invoke(ctx, "/bll_context.BllContextService/AddVectorKnowledge", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *bllContextServiceClient) DeleteVectorKnowledge(ctx context.Context, in *DeleteVectorKnowledgeRequest, opts ...grpc.CallOption) (*DeleteVectorKnowledgeResponse, error) {
-	out := new(DeleteVectorKnowledgeResponse)
-	err := c.cc.Invoke(ctx, "/bll_context.BllContextService/DeleteVectorKnowledge", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // BllContextServiceServer is the server API for BllContextService service.
 // All implementations must embed UnimplementedBllContextServiceServer
 // for forward compatibility
 type BllContextServiceServer interface {
 	// 流式聊天接口
 	StreamChat(*ChatRequest, BllContextService_StreamChatServer) error
-	// 添加知识库到向量数据库
-	AddVectorKnowledge(context.Context, *AddVectorKnowledgeRequest) (*AddVectorKnowledgeResponse, error)
-	// 从向量数据库删除知识库
-	DeleteVectorKnowledge(context.Context, *DeleteVectorKnowledgeRequest) (*DeleteVectorKnowledgeResponse, error)
 	mustEmbedUnimplementedBllContextServiceServer()
 }
 
@@ -103,12 +77,6 @@ type UnimplementedBllContextServiceServer struct {
 
 func (UnimplementedBllContextServiceServer) StreamChat(*ChatRequest, BllContextService_StreamChatServer) error {
 	return status.Errorf(codes.Unimplemented, "method StreamChat not implemented")
-}
-func (UnimplementedBllContextServiceServer) AddVectorKnowledge(context.Context, *AddVectorKnowledgeRequest) (*AddVectorKnowledgeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddVectorKnowledge not implemented")
-}
-func (UnimplementedBllContextServiceServer) DeleteVectorKnowledge(context.Context, *DeleteVectorKnowledgeRequest) (*DeleteVectorKnowledgeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteVectorKnowledge not implemented")
 }
 func (UnimplementedBllContextServiceServer) mustEmbedUnimplementedBllContextServiceServer() {}
 
@@ -144,58 +112,13 @@ func (x *bllContextServiceStreamChatServer) Send(m *StreamChatResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _BllContextService_AddVectorKnowledge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddVectorKnowledgeRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(BllContextServiceServer).AddVectorKnowledge(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/bll_context.BllContextService/AddVectorKnowledge",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BllContextServiceServer).AddVectorKnowledge(ctx, req.(*AddVectorKnowledgeRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _BllContextService_DeleteVectorKnowledge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteVectorKnowledgeRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(BllContextServiceServer).DeleteVectorKnowledge(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/bll_context.BllContextService/DeleteVectorKnowledge",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BllContextServiceServer).DeleteVectorKnowledge(ctx, req.(*DeleteVectorKnowledgeRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // BllContextService_ServiceDesc is the grpc.ServiceDesc for BllContextService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var BllContextService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "bll_context.BllContextService",
 	HandlerType: (*BllContextServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "AddVectorKnowledge",
-			Handler:    _BllContextService_AddVectorKnowledge_Handler,
-		},
-		{
-			MethodName: "DeleteVectorKnowledge",
-			Handler:    _BllContextService_DeleteVectorKnowledge_Handler,
-		},
-	},
+	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "StreamChat",

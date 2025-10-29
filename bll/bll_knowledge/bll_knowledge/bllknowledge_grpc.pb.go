@@ -18,8 +18,10 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type BllKnowledgeServiceClient interface {
-	// 占位方法，后续添加具体实现
-	Ping(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Pong, error)
+	// 添加知识库到向量数据库
+	AddVectorKnowledge(ctx context.Context, in *AddVectorKnowledgeRequest, opts ...grpc.CallOption) (*AddVectorKnowledgeResponse, error)
+	// 从向量数据库删除知识库
+	DeleteVectorKnowledge(ctx context.Context, in *DeleteVectorKnowledgeRequest, opts ...grpc.CallOption) (*DeleteVectorKnowledgeResponse, error)
 }
 
 type bllKnowledgeServiceClient struct {
@@ -30,9 +32,18 @@ func NewBllKnowledgeServiceClient(cc grpc.ClientConnInterface) BllKnowledgeServi
 	return &bllKnowledgeServiceClient{cc}
 }
 
-func (c *bllKnowledgeServiceClient) Ping(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Pong, error) {
-	out := new(Pong)
-	err := c.cc.Invoke(ctx, "/bll_knowledge.BllKnowledgeService/Ping", in, out, opts...)
+func (c *bllKnowledgeServiceClient) AddVectorKnowledge(ctx context.Context, in *AddVectorKnowledgeRequest, opts ...grpc.CallOption) (*AddVectorKnowledgeResponse, error) {
+	out := new(AddVectorKnowledgeResponse)
+	err := c.cc.Invoke(ctx, "/bll_knowledge.BllKnowledgeService/AddVectorKnowledge", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bllKnowledgeServiceClient) DeleteVectorKnowledge(ctx context.Context, in *DeleteVectorKnowledgeRequest, opts ...grpc.CallOption) (*DeleteVectorKnowledgeResponse, error) {
+	out := new(DeleteVectorKnowledgeResponse)
+	err := c.cc.Invoke(ctx, "/bll_knowledge.BllKnowledgeService/DeleteVectorKnowledge", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -43,8 +54,10 @@ func (c *bllKnowledgeServiceClient) Ping(ctx context.Context, in *Empty, opts ..
 // All implementations must embed UnimplementedBllKnowledgeServiceServer
 // for forward compatibility
 type BllKnowledgeServiceServer interface {
-	// 占位方法，后续添加具体实现
-	Ping(context.Context, *Empty) (*Pong, error)
+	// 添加知识库到向量数据库
+	AddVectorKnowledge(context.Context, *AddVectorKnowledgeRequest) (*AddVectorKnowledgeResponse, error)
+	// 从向量数据库删除知识库
+	DeleteVectorKnowledge(context.Context, *DeleteVectorKnowledgeRequest) (*DeleteVectorKnowledgeResponse, error)
 	mustEmbedUnimplementedBllKnowledgeServiceServer()
 }
 
@@ -52,8 +65,11 @@ type BllKnowledgeServiceServer interface {
 type UnimplementedBllKnowledgeServiceServer struct {
 }
 
-func (UnimplementedBllKnowledgeServiceServer) Ping(context.Context, *Empty) (*Pong, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
+func (UnimplementedBllKnowledgeServiceServer) AddVectorKnowledge(context.Context, *AddVectorKnowledgeRequest) (*AddVectorKnowledgeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddVectorKnowledge not implemented")
+}
+func (UnimplementedBllKnowledgeServiceServer) DeleteVectorKnowledge(context.Context, *DeleteVectorKnowledgeRequest) (*DeleteVectorKnowledgeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteVectorKnowledge not implemented")
 }
 func (UnimplementedBllKnowledgeServiceServer) mustEmbedUnimplementedBllKnowledgeServiceServer() {}
 
@@ -68,20 +84,38 @@ func RegisterBllKnowledgeServiceServer(s grpc.ServiceRegistrar, srv BllKnowledge
 	s.RegisterService(&BllKnowledgeService_ServiceDesc, srv)
 }
 
-func _BllKnowledgeService_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Empty)
+func _BllKnowledgeService_AddVectorKnowledge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddVectorKnowledgeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(BllKnowledgeServiceServer).Ping(ctx, in)
+		return srv.(BllKnowledgeServiceServer).AddVectorKnowledge(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/bll_knowledge.BllKnowledgeService/Ping",
+		FullMethod: "/bll_knowledge.BllKnowledgeService/AddVectorKnowledge",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BllKnowledgeServiceServer).Ping(ctx, req.(*Empty))
+		return srv.(BllKnowledgeServiceServer).AddVectorKnowledge(ctx, req.(*AddVectorKnowledgeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BllKnowledgeService_DeleteVectorKnowledge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteVectorKnowledgeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BllKnowledgeServiceServer).DeleteVectorKnowledge(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/bll_knowledge.BllKnowledgeService/DeleteVectorKnowledge",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BllKnowledgeServiceServer).DeleteVectorKnowledge(ctx, req.(*DeleteVectorKnowledgeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -94,8 +128,12 @@ var BllKnowledgeService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*BllKnowledgeServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Ping",
-			Handler:    _BllKnowledgeService_Ping_Handler,
+			MethodName: "AddVectorKnowledge",
+			Handler:    _BllKnowledgeService_AddVectorKnowledge_Handler,
+		},
+		{
+			MethodName: "DeleteVectorKnowledge",
+			Handler:    _BllKnowledgeService_DeleteVectorKnowledge_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

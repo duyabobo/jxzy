@@ -4,14 +4,37 @@ package bll_knowledge;
 
 option go_package = "./bll_knowledge";
 
-// 知识库管理服务
-service BllKnowledgeService {
-  // 占位方法，后续添加具体实现
-  rpc Ping(Empty) returns (Pong);
+// ====== 知识库管理相关消息定义 ======
+
+message AddVectorKnowledgeRequest {
+  string summary = 1;                 // 用于向量化的总结句子
+  string content = 2;                 // 知识库内容
+  string user_id = 3;                 // 用户ID
 }
 
-message Empty {}
+message AddVectorKnowledgeResponse {
+  string vector_id = 1;               // 向量ID（summary和content的MD5）
+  bool success = 2;                   // 操作是否成功
+  string message = 3;                 // 响应消息
+}
 
-message Pong {
-  string message = 1;
+message DeleteVectorKnowledgeRequest {
+  string vector_id = 1;               // 向量ID
+  string user_id = 2;                 // 用户ID
+}
+
+message DeleteVectorKnowledgeResponse {
+  bool success = 1;                   // 操作是否成功
+  string message = 2;                 // 响应消息
+}
+
+// ====== 服务定义 ======
+
+// 知识库管理服务
+service BllKnowledgeService {
+  // 添加知识库到向量数据库
+  rpc AddVectorKnowledge(AddVectorKnowledgeRequest) returns (AddVectorKnowledgeResponse);
+  
+  // 从向量数据库删除知识库
+  rpc DeleteVectorKnowledge(DeleteVectorKnowledgeRequest) returns (DeleteVectorKnowledgeResponse);
 }

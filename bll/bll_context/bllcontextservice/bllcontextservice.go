@@ -13,21 +13,13 @@ import (
 )
 
 type (
-	AddVectorKnowledgeRequest     = bll_context.AddVectorKnowledgeRequest
-	AddVectorKnowledgeResponse    = bll_context.AddVectorKnowledgeResponse
-	ChatRequest                   = bll_context.ChatRequest
-	DeleteVectorKnowledgeRequest  = bll_context.DeleteVectorKnowledgeRequest
-	DeleteVectorKnowledgeResponse = bll_context.DeleteVectorKnowledgeResponse
-	StreamChatResponse            = bll_context.StreamChatResponse
-	TokenUsage                    = bll_context.TokenUsage
+	ChatRequest        = bll_context.ChatRequest
+	StreamChatResponse = bll_context.StreamChatResponse
+	TokenUsage         = bll_context.TokenUsage
 
 	BllContextService interface {
 		// 流式聊天接口
 		StreamChat(ctx context.Context, in *ChatRequest, opts ...grpc.CallOption) (bll_context.BllContextService_StreamChatClient, error)
-		// 添加知识库到向量数据库
-		AddVectorKnowledge(ctx context.Context, in *AddVectorKnowledgeRequest, opts ...grpc.CallOption) (*AddVectorKnowledgeResponse, error)
-		// 从向量数据库删除知识库
-		DeleteVectorKnowledge(ctx context.Context, in *DeleteVectorKnowledgeRequest, opts ...grpc.CallOption) (*DeleteVectorKnowledgeResponse, error)
 	}
 
 	defaultBllContextService struct {
@@ -45,16 +37,4 @@ func NewBllContextService(cli zrpc.Client) BllContextService {
 func (m *defaultBllContextService) StreamChat(ctx context.Context, in *ChatRequest, opts ...grpc.CallOption) (bll_context.BllContextService_StreamChatClient, error) {
 	client := bll_context.NewBllContextServiceClient(m.cli.Conn())
 	return client.StreamChat(ctx, in, opts...)
-}
-
-// 添加知识库到向量数据库
-func (m *defaultBllContextService) AddVectorKnowledge(ctx context.Context, in *AddVectorKnowledgeRequest, opts ...grpc.CallOption) (*AddVectorKnowledgeResponse, error) {
-	client := bll_context.NewBllContextServiceClient(m.cli.Conn())
-	return client.AddVectorKnowledge(ctx, in, opts...)
-}
-
-// 从向量数据库删除知识库
-func (m *defaultBllContextService) DeleteVectorKnowledge(ctx context.Context, in *DeleteVectorKnowledgeRequest, opts ...grpc.CallOption) (*DeleteVectorKnowledgeResponse, error) {
-	client := bll_context.NewBllContextServiceClient(m.cli.Conn())
-	return client.DeleteVectorKnowledge(ctx, in, opts...)
 }

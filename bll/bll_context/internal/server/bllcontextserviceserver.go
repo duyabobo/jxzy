@@ -4,8 +4,6 @@
 package server
 
 import (
-	"context"
-
 	"jxzy/bll/bll_context/bll_context"
 	"jxzy/bll/bll_context/internal/logic"
 	"jxzy/bll/bll_context/internal/svc"
@@ -26,16 +24,4 @@ func NewBllContextServiceServer(svcCtx *svc.ServiceContext) *BllContextServiceSe
 func (s *BllContextServiceServer) StreamChat(in *bll_context.ChatRequest, stream bll_context.BllContextService_StreamChatServer) error {
 	l := logic.NewStreamChatLogic(stream.Context(), s.svcCtx)
 	return l.StreamChat(in, stream)
-}
-
-// 添加知识库到向量数据库
-func (s *BllContextServiceServer) AddVectorKnowledge(ctx context.Context, in *bll_context.AddVectorKnowledgeRequest) (*bll_context.AddVectorKnowledgeResponse, error) {
-	l := logic.NewAddVectorKnowledgeLogic(ctx, s.svcCtx)
-	return l.AddVectorKnowledge(in)
-}
-
-// 从向量数据库删除知识库
-func (s *BllContextServiceServer) DeleteVectorKnowledge(ctx context.Context, in *bll_context.DeleteVectorKnowledgeRequest) (*bll_context.DeleteVectorKnowledgeResponse, error) {
-	l := logic.NewDeleteVectorKnowledgeLogic(ctx, s.svcCtx)
-	return l.DeleteVectorKnowledge(in)
 }

@@ -22,8 +22,14 @@ func NewBllKnowledgeServiceServer(svcCtx *svc.ServiceContext) *BllKnowledgeServi
 	}
 }
 
-// 占位方法，后续添加具体实现
-func (s *BllKnowledgeServiceServer) Ping(ctx context.Context, in *bll_knowledge.Empty) (*bll_knowledge.Pong, error) {
-	l := logic.NewPingLogic(ctx, s.svcCtx)
-	return l.Ping(in)
+// 添加知识库到向量数据库
+func (s *BllKnowledgeServiceServer) AddVectorKnowledge(ctx context.Context, in *bll_knowledge.AddVectorKnowledgeRequest) (*bll_knowledge.AddVectorKnowledgeResponse, error) {
+	l := logic.NewAddVectorKnowledgeLogic(ctx, s.svcCtx)
+	return l.AddVectorKnowledge(in)
+}
+
+// 从向量数据库删除知识库
+func (s *BllKnowledgeServiceServer) DeleteVectorKnowledge(ctx context.Context, in *bll_knowledge.DeleteVectorKnowledgeRequest) (*bll_knowledge.DeleteVectorKnowledgeResponse, error) {
+	l := logic.NewDeleteVectorKnowledgeLogic(ctx, s.svcCtx)
+	return l.DeleteVectorKnowledge(in)
 }
