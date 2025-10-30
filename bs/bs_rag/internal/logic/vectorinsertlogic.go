@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"jxzy/bs/bs_rag/bs_rag"
-	"jxzy/bs/bs_rag/internal/provider/types"
+	"jxzy/bs/bs_rag/internal/provider/vectorstore/types"
 	"jxzy/bs/bs_rag/internal/svc"
 	consts "jxzy/common/const"
 	"jxzy/common/logger"
