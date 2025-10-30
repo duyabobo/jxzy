@@ -91,6 +91,16 @@ main() {
     if ! check_service_status "bll-context" 8080; then
         all_running=false
     fi
+
+    # 检查 bll-prompt 服务
+    if ! check_service_status "bll-prompt" 8005; then
+        all_running=false
+    fi
+
+    # 检查 bll-knowledge 服务
+    if ! check_service_status "bll-knowledge" 8006; then
+        all_running=false
+    fi
     
     # 检查 chat-api 服务
     if ! check_service_status "chat-api" 8888; then

@@ -19,7 +19,7 @@ echo "📁 项目根目录: $PROJECT_ROOT"
 # 1. 停止所有服务
 echo ""
 echo "🛑 步骤1: 停止所有服务..."
-pkill -f "chat-api|api-knowledge|bll-context|bs-llm|bs_rag" || true
+pkill -f "chat-api|api-knowledge|bll-context|bll-knowledge|bll-prompt|bs-llm|bs_rag" || true
 sleep 3
 
 # 2. 启动 bs-llm 服务
@@ -38,25 +38,41 @@ bash scripts/restart.sh
 cd "$PROJECT_ROOT"
 sleep 2
 
-# 4. 启动 bll-context 服务
+# 4. 启动 bll-prompt 服务
 echo ""
-echo "🚀 步骤4: 启动 bll-context 服务..."
+echo "🚀 步骤4: 启动 bll-prompt 服务..."
+cd bll/bll_prompt
+bash scripts/restart.sh
+cd "$PROJECT_ROOT"
+sleep 2
+
+# 5. 启动 bll-knowledge 服务
+echo ""
+echo "🚀 步骤5: 启动 bll-knowledge 服务..."
+cd bll/bll_knowledge
+bash scripts/restart.sh
+cd "$PROJECT_ROOT"
+sleep 2
+
+# 6. 启动 bll-context 服务
+echo ""
+echo "🚀 步骤6: 启动 bll-context 服务..."
 cd bll/bll_context
 bash scripts/restart.sh
 cd "$PROJECT_ROOT"
 sleep 2
 
-# 5. 启动 chat-api 服务
+# 7. 启动 chat-api 服务
 echo ""
-echo "🚀 步骤5: 启动 chat-api 服务..."
+echo "🚀 步骤7: 启动 chat-api 服务..."
 cd apis/api_chat
 bash scripts/restart.sh
 cd "$PROJECT_ROOT"
 sleep 2
 
-# 6. 启动 api-knowledge 服务
+# 8. 启动 api-knowledge 服务
 echo ""
-echo "🚀 步骤6: 启动 api-knowledge 服务..."
+echo "🚀 步骤8: 启动 api-knowledge 服务..."
 cd apis/api_knowledge
 bash scripts/restart.sh
 cd "$PROJECT_ROOT"
@@ -70,6 +86,8 @@ echo "服务状态:"
 echo "  bs-llm        (端口: 8081) - 运行中"
 echo "  bs-rag        (端口: 8082) - 运行中"
 echo "  bll-context   (端口: 8080) - 运行中"
+echo "  bll-prompt    (端口: 8005) - 运行中"
+echo "  bll-knowledge (端口: 8006) - 运行中"
 echo "  chat-api      (端口: 8888) - 运行中"
 echo "  api-knowledge (端口: 8889) - 运行中"
 echo ""
