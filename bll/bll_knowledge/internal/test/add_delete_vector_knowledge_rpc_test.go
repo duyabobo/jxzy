@@ -23,8 +23,7 @@ func TestAddVectorKnowledge_RPC(t *testing.T) {
 	s := server.NewBllKnowledgeServiceServer(svcCtx)
 
 	req := &knowledgepb.AddVectorKnowledgeRequest{
-		Summary: "测试总结",
-		Content: "测试内容",
+		FileUrl: "https://example.com/test.txt",
 		UserId:  "test-user",
 	}
 

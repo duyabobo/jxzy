@@ -16,6 +16,10 @@ Log:
   MaxBackups: 10
   Stat: true
 
+Cache:
+  - Host: 127.0.0.1:6379
+    Type: node
+
 # MySQL数据库配置
 MySQL:
   DataSource: guan:duyabo@tcp(localhost:3306)/guan?charset=utf8mb4&parseTime=true&loc=Local
@@ -23,5 +27,11 @@ MySQL:
 # BsRAG-RPC配置
 BsRagRpc:
   Target: 127.0.0.1:8082
+  NonBlock: true
+  Timeout: 600000
+
+# BsLLM-RPC配置
+BsLlmRpc:
+  Target: 127.0.0.1:8081
   NonBlock: true
   Timeout: 600000

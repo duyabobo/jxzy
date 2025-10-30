@@ -7,9 +7,8 @@ option go_package = "./bll_knowledge";
 // ====== 知识库管理相关消息定义 ======
 
 message AddVectorKnowledgeRequest {
-  string summary = 1;                 // 用于向量化的总结句子
-  string content = 2;                 // 知识库内容
-  string user_id = 3;                 // 用户ID
+  string file_url = 1;                // 知识文件的OSS地址
+  string user_id = 2;                 // 用户ID
 }
 
 message AddVectorKnowledgeResponse {

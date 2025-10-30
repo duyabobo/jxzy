@@ -23,9 +23,10 @@ var (
 )
 
 type (
-	knowledgeFileModel interface {
+    knowledgeFileModel interface {
 		Insert(ctx context.Context, data *KnowledgeFile) (sql.Result, error)
 		FindOne(ctx context.Context, id int64) (*KnowledgeFile, error)
+        FindOneByMd5(ctx context.Context, fileMd5 string) (*KnowledgeFile, error)
 		Update(ctx context.Context, data *KnowledgeFile) error
 		Delete(ctx context.Context, id int64) error
 	}
@@ -71,6 +72,20 @@ func (m *defaultKnowledgeFileModel) FindOne(ctx context.Context, id int64) (*Kno
 	default:
 		return nil, err
 	}
+}
+
+func (m *defaultKnowledgeFileModel) FindOneByMd5(ctx context.Context, fileMd5 string) (*KnowledgeFile, error) {
+    query := fmt.Sprintf("select %s from %s where `file_md5` = ? limit 1", knowledgeFileRows, m.table)
+    var resp KnowledgeFile
+    err := m.conn.QueryRowCtx(ctx, &resp, query, fileMd5)
+    switch err {
+    case nil:
+        return &resp, nil
+    case sqlc.ErrNotFound:
+        return nil, ErrNotFound
+    default:
+        return nil, err
+    }
 }
 
 func (m *defaultKnowledgeFileModel) Insert(ctx context.Context, data *KnowledgeFile) (sql.Result, error) {
