@@ -22,7 +22,7 @@ CREATE TABLE knowledge_segment (
 
 -- 摘要句表：对应标准语义协议里的摘要句（摘要句原文存储于此）
 CREATE TABLE knowledge_summary_sentence (
-    id BIGINT AUTO_INCREMENT COMMENT '记录ID',
+    id BIGINT AUTO_INCREMENT COMMENT '记录ID',  -- summary_id 就是 vector_id
     knowledge_file_id BIGINT NOT NULL COMMENT '关联的知识文件ID，对应knowledge_file表',
     knowledge_segment_id BIGINT NOT NULL COMMENT '关联的语义段ID，对应knowledge_segment表',
     summary_sentence_text VARCHAR(4096) NOT NULL COMMENT '摘要句文本',

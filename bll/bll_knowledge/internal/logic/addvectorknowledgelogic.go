@@ -42,8 +42,8 @@ func NewAddVectorKnowledgeLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 
 // AddVectorKnowledge 添加知识库到向量数据库
 func (l *AddVectorKnowledgeLogic) AddVectorKnowledge(in *knowledgepb.AddVectorKnowledgeRequest) (*knowledgepb.AddVectorKnowledgeResponse, error) {
-	l.Logger.Infof("AddVectorKnowledge called with file_url: %s, user_id: %s",
-		in.FileUrl, in.UserId)
+	l.Logger.Infof("AddVectorKnowledge called with source_type: %v, user_id: %s",
+		in.SourceType, in.UserId)
 
 	// 1. 验证输入参数
 	if err := l.validateInput(in); err != nil {
@@ -54,49 +54,79 @@ func (l *AddVectorKnowledgeLogic) AddVectorKnowledge(in *knowledgepb.AddVectorKn
 		}, nil
 	}
 
-	// 2. 下载文件内容
-	fileBytes, fileName, fileType, fileSize, err := l.downloadFile(in.FileUrl)
-	if err != nil {
-		l.Logger.Errorf("Failed to download file: %v", err)
-		return &knowledgepb.AddVectorKnowledgeResponse{Success: false, Message: fmt.Sprintf("下载文件失败: %v", err)}, nil
-	}
+	var fileId int64 = 0
+	var fileMd5 string
+	var segments []string
+	var err error
 
-	// 3. 计算文件MD5并进行去重
-	fileMd5 := l.md5Bytes(fileBytes)
-	l.Logger.Infof("Computed file md5: %s (name=%s, size=%d, type=%s)", fileMd5, fileName, fileSize, fileType)
+	// 根据source_type判断处理流程
+	if in.SourceType == knowledgepb.KnowledgeSourceType_SOURCE_TYPE_FILE_URL {
+		// 模式1: 通过OSS地址添加
+		// 2. 下载文件内容
+		fileBytes, fileName, fileType, fileSize, err := l.downloadFile(in.FileUrl)
+		if err != nil {
+			l.Logger.Errorf("Failed to download file: %v", err)
+			return &knowledgepb.AddVectorKnowledgeResponse{Success: false, Message: fmt.Sprintf("下载文件失败: %v", err)}, nil
+		}
 
-	// 3.1 查询是否已存在
-	existing, _ := l.svcCtx.KnowledgeFileModel.FindOneByMd5(l.ctx, fileMd5)
-	if existing != nil {
-		l.Logger.Infof("File already processed, knowledge_file.id=%d", existing.Id)
-		return &knowledgepb.AddVectorKnowledgeResponse{VectorId: fileMd5, Success: true, Message: "文件已存在，跳过处理"}, nil
-	}
+		// 3. 计算文件MD5并进行去重
+		fileMd5 = l.md5Bytes(fileBytes)
+		l.Logger.Infof("Computed file md5: %s (name=%s, size=%d, type=%s)", fileMd5, fileName, fileSize, fileType)
 
-	// 4. 入库 knowledge_file
-	kf := &model.KnowledgeFile{
-		OssPath:  in.FileUrl,
-		FileName: fileName,
-		FileSize: fileSize,
-		FileType: fileType,
-		FileMd5:  fileMd5,
-	}
-	res, err := l.svcCtx.KnowledgeFileModel.Insert(l.ctx, kf)
-	if err != nil {
-		l.Logger.Errorf("Insert knowledge_file failed: %v", err)
-		return &knowledgepb.AddVectorKnowledgeResponse{Success: false, Message: fmt.Sprintf("保存文件记录失败: %v", err)}, nil
-	}
-	fileId, _ := res.LastInsertId()
+		// 3.1 查询是否已存在
+		existing, _ := l.svcCtx.KnowledgeFileModel.FindOneByMd5(l.ctx, fileMd5)
+		if existing != nil {
+			l.Logger.Infof("File already processed, knowledge_file.id=%d", existing.Id)
+			return &knowledgepb.AddVectorKnowledgeResponse{VectorId: fileMd5, Success: true, Message: "文件已存在，跳过处理"}, nil
+		}
 
-	// 5. 利用LLM进行语义段拆分
-	segments, err := l.segmentTextWithLLM(string(fileBytes), in.UserId)
-	if err != nil {
-		l.Logger.Errorf("LLM segmentation failed: %v", err)
-		return &knowledgepb.AddVectorKnowledgeResponse{Success: false, Message: fmt.Sprintf("LLM拆分失败: %v", err)}, nil
+		// 4. 入库 knowledge_file
+		kf := &model.KnowledgeFile{
+			OssPath:  in.FileUrl,
+			FileName: fileName,
+			FileSize: fileSize,
+			FileType: fileType,
+			FileMd5:  fileMd5,
+		}
+		res, err := l.svcCtx.KnowledgeFileModel.Insert(l.ctx, kf)
+		if err != nil {
+			l.Logger.Errorf("Insert knowledge_file failed: %v", err)
+			return &knowledgepb.AddVectorKnowledgeResponse{Success: false, Message: fmt.Sprintf("保存文件记录失败: %v", err)}, nil
+		}
+		fileId, _ = res.LastInsertId()
+
+		// 5. 利用LLM进行语义段拆分
+		segments, err = l.segmentTextWithLLM(string(fileBytes), in.UserId)
+		if err != nil {
+			l.Logger.Errorf("LLM segmentation failed: %v", err)
+			return &knowledgepb.AddVectorKnowledgeResponse{Success: false, Message: fmt.Sprintf("LLM拆分失败: %v", err)}, nil
+		}
+	} else if in.SourceType == knowledgepb.KnowledgeSourceType_SOURCE_TYPE_SEGMENTS {
+		// 模式2: 直接传入segments片段列表
+		segments = in.Segments
+		// 过滤空字符串
+		filtered := make([]string, 0, len(segments))
+		for _, seg := range segments {
+			seg = strings.TrimSpace(seg)
+			if seg != "" {
+				filtered = append(filtered, seg)
+			}
+		}
+		segments = filtered
+		if len(segments) == 0 {
+			return &knowledgepb.AddVectorKnowledgeResponse{Success: false, Message: "segments列表不能为空"}, nil
+		}
+		// fileId使用0标识，fileMd5使用segments的MD5组合
+		fileMd5 = l.md5String(strings.Join(segments, "\n"))
+		l.Logger.Infof("Using segments mode, segments count: %d, fileMd5: %s", len(segments), fileMd5)
+	} else {
+		return &knowledgepb.AddVectorKnowledgeResponse{Success: false, Message: fmt.Sprintf("不支持的source_type: %v", in.SourceType)}, nil
 	}
 
 	// 6. 存储语义段，并为每个语义段生成摘要句后存储与入RAG
 	var documents []*bs_rag.VectorDocument
 	for _, seg := range segments {
+		// 存储语义段到数据库（fileId可以为0）
 		segMd5 := l.md5String(seg)
 		segRec := &model.KnowledgeSegment{KnowledgeFileId: fileId, SegmentText: seg, SegmentMd5: segMd5}
 		segRes, err := l.svcCtx.KnowledgeSegmentModel.Insert(l.ctx, segRec)
@@ -119,6 +149,7 @@ func (l *AddVectorKnowledgeLogic) AddVectorKnowledge(in *knowledgepb.AddVectorKn
 			if summary == "" {
 				continue
 			}
+			// 存储摘要句到数据库（fileId可以为0）
 			sumMd5 := l.md5String(summary)
 			sumRec := &model.KnowledgeSummarySentence{
 				KnowledgeFileId:     fileId,
@@ -134,8 +165,9 @@ func (l *AddVectorKnowledgeLogic) AddVectorKnowledge(in *knowledgepb.AddVectorKn
 			summaryId, _ := sumRes.LastInsertId()
 
 			// 6.3 构建RAG文档，Id使用摘要句入库id，内容使用摘要句
+			docId := fmt.Sprintf("%d", summaryId)
 			documents = append(documents, &bs_rag.VectorDocument{
-				Id:   fmt.Sprintf("%d", summaryId),
+				Id:   docId,
 				Text: summary,
 				Metadata: map[string]string{
 					"knowledge_file_id":    fmt.Sprintf("%d", fileId),
@@ -145,10 +177,6 @@ func (l *AddVectorKnowledgeLogic) AddVectorKnowledge(in *knowledgepb.AddVectorKn
 				Content: summary,
 			})
 		}
-	}
-
-	if len(documents) == 0 {
-		return &knowledgepb.AddVectorKnowledgeResponse{VectorId: fileMd5, Success: false, Message: "没有可插入的摘要文档"}, nil
 	}
 
 	// 7. 调用RAG服务插入向量（使用摘要句作为content/text）
@@ -170,11 +198,19 @@ func (l *AddVectorKnowledgeLogic) AddVectorKnowledge(in *knowledgepb.AddVectorKn
 
 // validateInput 验证输入参数
 func (l *AddVectorKnowledgeLogic) validateInput(in *knowledgepb.AddVectorKnowledgeRequest) error {
-	if strings.TrimSpace(in.FileUrl) == "" {
-		return fmt.Errorf("file_url不能为空")
-	}
 	if strings.TrimSpace(in.UserId) == "" {
 		return fmt.Errorf("user_id不能为空")
+	}
+	if in.SourceType == knowledgepb.KnowledgeSourceType_SOURCE_TYPE_FILE_URL {
+		if strings.TrimSpace(in.FileUrl) == "" {
+			return fmt.Errorf("file_url不能为空")
+		}
+	} else if in.SourceType == knowledgepb.KnowledgeSourceType_SOURCE_TYPE_SEGMENTS {
+		if len(in.Segments) == 0 {
+			return fmt.Errorf("segments列表不能为空")
+		}
+	} else {
+		return fmt.Errorf("source_type必须指定为FILE_URL或SEGMENTS")
 	}
 	return nil
 }
