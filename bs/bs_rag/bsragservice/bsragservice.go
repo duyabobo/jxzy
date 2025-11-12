@@ -13,8 +13,6 @@ import (
 )
 
 type (
-	CollectionInfoRequest  = bs_rag.CollectionInfoRequest
-	CollectionInfoResponse = bs_rag.CollectionInfoResponse
 	VectorDeleteRequest    = bs_rag.VectorDeleteRequest
 	VectorDeleteResponse   = bs_rag.VectorDeleteResponse
 	VectorDocument         = bs_rag.VectorDocument
@@ -31,8 +29,6 @@ type (
 		VectorInsert(ctx context.Context, in *VectorInsertRequest, opts ...grpc.CallOption) (*VectorInsertResponse, error)
 		// 删除向量文档
 		VectorDelete(ctx context.Context, in *VectorDeleteRequest, opts ...grpc.CallOption) (*VectorDeleteResponse, error)
-		// 获取集合信息
-		GetCollectionInfo(ctx context.Context, in *CollectionInfoRequest, opts ...grpc.CallOption) (*CollectionInfoResponse, error)
 	}
 
 	defaultBsRagService struct {
@@ -62,10 +58,4 @@ func (m *defaultBsRagService) VectorInsert(ctx context.Context, in *VectorInsert
 func (m *defaultBsRagService) VectorDelete(ctx context.Context, in *VectorDeleteRequest, opts ...grpc.CallOption) (*VectorDeleteResponse, error) {
 	client := bs_rag.NewBsRagServiceClient(m.cli.Conn())
 	return client.VectorDelete(ctx, in, opts...)
-}
-
-// 获取集合信息
-func (m *defaultBsRagService) GetCollectionInfo(ctx context.Context, in *CollectionInfoRequest, opts ...grpc.CallOption) (*CollectionInfoResponse, error) {
-	client := bs_rag.NewBsRagServiceClient(m.cli.Conn())
-	return client.GetCollectionInfo(ctx, in, opts...)
 }

@@ -23,30 +23,12 @@ func TestVectorSearch(t *testing.T) {
 	}
 	LogTestStart("TestVectorSearch", testParams)
 
-	// 首先检查集合是否存在
-	collectionReq := &bs_rag.CollectionInfoRequest{
-		CollectionName: "test_collection",
-		UserId:         "test_user_001",
-	}
-
-	collectionResp, err := ragServer.GetCollectionInfo(context.Background(), collectionReq)
-	if err != nil {
-		LogTestResult("TestVectorSearch", false, "Failed to get collection info: "+err.Error())
-		assert.Error(t, err)
-		return
-	}
-
-	if !collectionResp.Exists {
-		LogTestResult("TestVectorSearch", true, "Collection does not exist, skipping search test")
-		return
-	}
-
 	req := &bs_rag.VectorSearchRequest{
-		QueryText:      "测试查询文本", // 使用文本查询，自动向量化
-		TopK:           5,
-		MinScore:       0,
-		CollectionName: "test_collection",
-		UserId:         "test_user_001",
+		QueryText: "测试查询文本", // 使用文本查询，自动向量化
+		TopK:      5,
+		MinScore:  0,
+		UserId:    "test_user_001",
+		SceneCode: "test_scene", // 测试场景编码
 		Filters: map[string]string{
 			"source": "test",
 		},

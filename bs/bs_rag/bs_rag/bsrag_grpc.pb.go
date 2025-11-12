@@ -24,8 +24,6 @@ type BsRagServiceClient interface {
 	VectorInsert(ctx context.Context, in *VectorInsertRequest, opts ...grpc.CallOption) (*VectorInsertResponse, error)
 	// 删除向量文档
 	VectorDelete(ctx context.Context, in *VectorDeleteRequest, opts ...grpc.CallOption) (*VectorDeleteResponse, error)
-	// 获取集合信息
-	GetCollectionInfo(ctx context.Context, in *CollectionInfoRequest, opts ...grpc.CallOption) (*CollectionInfoResponse, error)
 	// 向量化文本
 	VectorizeText(ctx context.Context, in *VectorizeTextRequest, opts ...grpc.CallOption) (*VectorizeTextResponse, error)
 }
@@ -65,15 +63,6 @@ func (c *bsRagServiceClient) VectorDelete(ctx context.Context, in *VectorDeleteR
 	return out, nil
 }
 
-func (c *bsRagServiceClient) GetCollectionInfo(ctx context.Context, in *CollectionInfoRequest, opts ...grpc.CallOption) (*CollectionInfoResponse, error) {
-	out := new(CollectionInfoResponse)
-	err := c.cc.Invoke(ctx, "/bs_rag.BsRagService/GetCollectionInfo", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *bsRagServiceClient) VectorizeText(ctx context.Context, in *VectorizeTextRequest, opts ...grpc.CallOption) (*VectorizeTextResponse, error) {
 	out := new(VectorizeTextResponse)
 	err := c.cc.Invoke(ctx, "/bs_rag.BsRagService/VectorizeText", in, out, opts...)
@@ -93,8 +82,6 @@ type BsRagServiceServer interface {
 	VectorInsert(context.Context, *VectorInsertRequest) (*VectorInsertResponse, error)
 	// 删除向量文档
 	VectorDelete(context.Context, *VectorDeleteRequest) (*VectorDeleteResponse, error)
-	// 获取集合信息
-	GetCollectionInfo(context.Context, *CollectionInfoRequest) (*CollectionInfoResponse, error)
 	// 向量化文本
 	VectorizeText(context.Context, *VectorizeTextRequest) (*VectorizeTextResponse, error)
 	mustEmbedUnimplementedBsRagServiceServer()
@@ -112,9 +99,6 @@ func (UnimplementedBsRagServiceServer) VectorInsert(context.Context, *VectorInse
 }
 func (UnimplementedBsRagServiceServer) VectorDelete(context.Context, *VectorDeleteRequest) (*VectorDeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method VectorDelete not implemented")
-}
-func (UnimplementedBsRagServiceServer) GetCollectionInfo(context.Context, *CollectionInfoRequest) (*CollectionInfoResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetCollectionInfo not implemented")
 }
 func (UnimplementedBsRagServiceServer) VectorizeText(context.Context, *VectorizeTextRequest) (*VectorizeTextResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method VectorizeText not implemented")
@@ -186,24 +170,6 @@ func _BsRagService_VectorDelete_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _BsRagService_GetCollectionInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CollectionInfoRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(BsRagServiceServer).GetCollectionInfo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/bs_rag.BsRagService/GetCollectionInfo",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BsRagServiceServer).GetCollectionInfo(ctx, req.(*CollectionInfoRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _BsRagService_VectorizeText_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(VectorizeTextRequest)
 	if err := dec(in); err != nil {
@@ -240,10 +206,6 @@ var BsRagService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "VectorDelete",
 			Handler:    _BsRagService_VectorDelete_Handler,
-		},
-		{
-			MethodName: "GetCollectionInfo",
-			Handler:    _BsRagService_GetCollectionInfo_Handler,
 		},
 		{
 			MethodName: "VectorizeText",

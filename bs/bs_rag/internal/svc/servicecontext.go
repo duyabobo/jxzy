@@ -93,3 +93,18 @@ func (s *ServiceContext) GetEmbeddingProvider(ctx context.Context, sceneCode str
 
 	return embeddingProvider, scene.VectorDimension, nil
 }
+
+// GetCollectionName 根据scene_code获取collection_name
+func (s *ServiceContext) GetCollectionName(ctx context.Context, sceneCode string) (string, error) {
+	// 查询embedding_scene表
+	scene, err := s.EmbeddingSceneModel.FindOneBySceneCode(ctx, sceneCode)
+	if err != nil {
+		return "", fmt.Errorf("failed to find embedding scene by scene_code %s: %w", sceneCode, err)
+	}
+
+	if scene.CollectionName == "" {
+		return "", fmt.Errorf("collection_name is empty for scene_code %s", sceneCode)
+	}
+
+	return scene.CollectionName, nil
+}

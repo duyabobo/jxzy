@@ -8,6 +8,7 @@ CREATE TABLE embedding_scene (
     model_code VARCHAR(50) NOT NULL DEFAULT '' COMMENT 'embedding模型编码（如text-embedding-v4等）',
     model_name VARCHAR(100) NOT NULL DEFAULT '' COMMENT 'embedding模型名称',
     vector_dimension INT NOT NULL DEFAULT 1024 COMMENT 'embedding向量维度',
+    collection_name VARCHAR(100) NOT NULL DEFAULT '' COMMENT '向量数据库集合名称',
     deleted TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除（1-删除，0-未删除）',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',

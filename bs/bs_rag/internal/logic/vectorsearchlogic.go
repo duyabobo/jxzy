@@ -5,7 +5,6 @@ import (
 
 	"jxzy/bs/bs_rag/bs_rag"
 	"jxzy/bs/bs_rag/internal/svc"
-	consts "jxzy/common/const"
 	"jxzy/common/logger"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -76,12 +75,19 @@ func (l *VectorSearchLogic) VectorSearch(in *bs_rag.VectorSearchRequest) (*bs_ra
 		in.TopK = 10
 	}
 
-	if in.CollectionName == "" {
-		in.CollectionName = consts.DefaultCollectionName
+	// 根据scene_code获取collection_name
+	collectionName, err := l.svcCtx.GetCollectionName(l.ctx, in.SceneCode)
+	if err != nil {
+		l.Logger.Errorf("Failed to get collection_name for scene_code %s: %v", in.SceneCode, err)
+		return &bs_rag.VectorSearchResponse{
+			Results:      []*bs_rag.VectorSearchResult{},
+			TotalCount:   0,
+			SearchTimeMs: 0,
+		}, nil
 	}
 
 	// 执行搜索
-	results, err := l.svcCtx.VectorProvider.Search(l.ctx, in.CollectionName, queryVector, int(in.TopK), float32(in.MinScore))
+	results, err := l.svcCtx.VectorProvider.Search(l.ctx, collectionName, queryVector, int(in.TopK), float32(in.MinScore))
 	if err != nil {
 		return nil, err
 	}

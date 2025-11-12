@@ -31,6 +31,7 @@ message AddVectorKnowledgeResponse {
 message DeleteVectorKnowledgeRequest {
   string vector_id = 1;               // 向量ID
   string user_id = 2;                 // 用户ID
+  string scene_code = 3;              // 场景编码（用于确定集合名称）
 }
 
 message DeleteVectorKnowledgeResponse {

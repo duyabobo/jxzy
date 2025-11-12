@@ -7,7 +7,6 @@ import (
 	"jxzy/bs/bs_rag/bs_rag"
 	"jxzy/bs/bs_rag/internal/provider/vectorstore/types"
 	"jxzy/bs/bs_rag/internal/svc"
-	consts "jxzy/common/const"
 	"jxzy/common/logger"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -32,10 +31,6 @@ func NewVectorInsertLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Vect
 // 插入向量文档
 func (l *VectorInsertLogic) VectorInsert(in *bs_rag.VectorInsertRequest) (*bs_rag.VectorInsertResponse, error) {
 	// 参数验证
-	if in.CollectionName == "" {
-		in.CollectionName = consts.DefaultCollectionName
-	}
-
 	if len(in.Documents) == 0 {
 		return &bs_rag.VectorInsertResponse{
 			InsertedCount: 0,
@@ -48,6 +43,17 @@ func (l *VectorInsertLogic) VectorInsert(in *bs_rag.VectorInsertRequest) (*bs_ra
 			InsertedCount: 0,
 			InsertedIds:   []string{},
 			ErrorMessage:  "scene_code is required",
+		}, nil
+	}
+
+	// 根据scene_code获取collection_name
+	collectionName, err := l.svcCtx.GetCollectionName(l.ctx, in.SceneCode)
+	if err != nil {
+		l.Logger.Errorf("Failed to get collection_name for scene_code %s: %v", in.SceneCode, err)
+		return &bs_rag.VectorInsertResponse{
+			InsertedCount: 0,
+			InsertedIds:   []string{},
+			ErrorMessage:  fmt.Sprintf("获取collection_name失败: %v", err),
 		}, nil
 	}
 
@@ -104,7 +110,7 @@ func (l *VectorInsertLogic) VectorInsert(in *bs_rag.VectorInsertRequest) (*bs_ra
 	}
 
 	// 执行插入
-	err = l.svcCtx.VectorProvider.Insert(l.ctx, in.CollectionName, documents)
+	err = l.svcCtx.VectorProvider.Insert(l.ctx, collectionName, documents)
 	if err != nil {
 		return &bs_rag.VectorInsertResponse{
 			InsertedCount: 0,
@@ -113,7 +119,7 @@ func (l *VectorInsertLogic) VectorInsert(in *bs_rag.VectorInsertRequest) (*bs_ra
 		}, nil
 	}
 
-	l.Logger.Infof("Successfully inserted %d documents to collection: %s", len(documents), in.CollectionName)
+	l.Logger.Infof("Successfully inserted %d documents to collection: %s", len(documents), collectionName)
 
 	return &bs_rag.VectorInsertResponse{
 		InsertedCount: int32(len(documents)),

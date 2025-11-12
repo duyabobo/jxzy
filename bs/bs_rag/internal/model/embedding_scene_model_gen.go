@@ -45,6 +45,7 @@ type (
 		ModelCode       string    `db:"model_code"`
 		ModelName       string    `db:"model_name"`
 		VectorDimension int64     `db:"vector_dimension"`
+		CollectionName  string    `db:"collection_name"`
 		Deleted         int64     `db:"deleted"`
 		CreatedAt       time.Time `db:"created_at"`
 		UpdatedAt       time.Time `db:"updated_at"`
@@ -93,14 +94,14 @@ func (m *defaultEmbeddingSceneModel) FindOneBySceneCode(ctx context.Context, sce
 }
 
 func (m *defaultEmbeddingSceneModel) Insert(ctx context.Context, data *EmbeddingScene) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?)", m.table, embeddingSceneRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.SceneCode, data.SceneName, data.ProviderCode, data.ProviderName, data.ModelCode, data.ModelName, data.VectorDimension, data.Deleted)
+	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, embeddingSceneRowsExpectAutoSet)
+	ret, err := m.conn.ExecCtx(ctx, query, data.SceneCode, data.SceneName, data.ProviderCode, data.ProviderName, data.ModelCode, data.ModelName, data.VectorDimension, data.CollectionName, data.Deleted)
 	return ret, err
 }
 
 func (m *defaultEmbeddingSceneModel) Update(ctx context.Context, newData *EmbeddingScene) error {
 	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, embeddingSceneRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, newData.SceneCode, newData.SceneName, newData.ProviderCode, newData.ProviderName, newData.ModelCode, newData.ModelName, newData.VectorDimension, newData.Deleted, newData.Id)
+	_, err := m.conn.ExecCtx(ctx, query, newData.SceneCode, newData.SceneName, newData.ProviderCode, newData.ProviderName, newData.ModelCode, newData.ModelName, newData.VectorDimension, newData.CollectionName, newData.Deleted, newData.Id)
 	return err
 }
 

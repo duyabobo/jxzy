@@ -19,30 +19,12 @@ func TestVectorDelete(t *testing.T) {
 	}
 	LogTestStart("TestVectorDelete", testParams)
 
-	// 首先检查集合是否存在
-	collectionReq := &bs_rag.CollectionInfoRequest{
-		CollectionName: "test_collection",
-		UserId:         "test_user_001",
-	}
-
-	collectionResp, err := ragServer.GetCollectionInfo(context.Background(), collectionReq)
-	if err != nil {
-		LogTestResult("TestVectorDelete", false, "Failed to get collection info: "+err.Error())
-		assert.Error(t, err)
-		return
-	}
-
-	if !collectionResp.Exists {
-		LogTestResult("TestVectorDelete", true, "Collection does not exist, skipping delete test")
-		return
-	}
-
 	documentIDs := []string{"doc_001"}
 
 	req := &bs_rag.VectorDeleteRequest{
-		CollectionName: "test_collection",
-		DocumentIds:    documentIDs,
-		UserId:         "test_user_001",
+		DocumentIds: documentIDs,
+		UserId:      "test_user_001",
+		SceneCode:   "test_scene", // 测试场景编码
 	}
 
 	_, err = ragServer.VectorDelete(context.Background(), req)

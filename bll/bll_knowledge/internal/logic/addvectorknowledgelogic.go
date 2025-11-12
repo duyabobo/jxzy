@@ -17,7 +17,6 @@ import (
 	"jxzy/bll/bll_knowledge/internal/svc"
 	bsllm "jxzy/bs/bs_llm/bs_llm"
 	"jxzy/bs/bs_rag/bs_rag"
-	consts "jxzy/common/const"
 	"jxzy/common/logger"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -294,10 +293,9 @@ func (l *AddVectorKnowledgeLogic) insertVectorsToRAG(fileMd5 string, documents [
 	}
 
 	ragReq := &bs_rag.VectorInsertRequest{
-		CollectionName: consts.DefaultCollectionName,
-		Documents:      documents,
-		UserId:         userId,
-		SceneCode:      sceneCode,
+		Documents: documents,
+		UserId:    userId,
+		SceneCode: sceneCode,
 	}
 	ragResp, err := l.svcCtx.RagRpc.VectorInsert(l.ctx, ragReq)
 	if err != nil {

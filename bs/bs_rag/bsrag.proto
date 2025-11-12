@@ -11,10 +11,9 @@ message VectorSearchRequest {
   string query_text = 1;                  // 查询文本（用于自动向量化）
   int32 top_k = 2;                       // 返回最相似的k个结果
   float min_score = 3;                   // 最小相似度阈值
-  string collection_name = 4;            // 集合名称
-  map<string, string> filters = 5;       // 过滤条件
-  string user_id = 6;                    // 用户ID
-  string scene_code = 7;                 // 场景编码（用于确定使用的embedding模型）
+  map<string, string> filters = 4;       // 过滤条件
+  string user_id = 5;                    // 用户ID
+  string scene_code = 6;                 // 场景编码（用于确定使用的embedding模型和集合名称）
 }
 
 // 向量搜索结果
@@ -35,10 +34,9 @@ message VectorSearchResponse {
 
 // 向量插入请求
 message VectorInsertRequest {
-  string collection_name = 1;            // 集合名称
-  repeated VectorDocument documents = 2; // 要插入的文档列表
-  string user_id = 3;                    // 用户ID
-  string scene_code = 4;                 // 场景编码（用于确定使用的embedding模型）
+  repeated VectorDocument documents = 1; // 要插入的文档列表
+  string user_id = 2;                    // 用户ID
+  string scene_code = 3;                 // 场景编码（用于确定使用的embedding模型和集合名称）
 }
 
 // 向量文档
@@ -58,9 +56,9 @@ message VectorInsertResponse {
 
 // 向量删除请求
 message VectorDeleteRequest {
-  string collection_name = 1;            // 集合名称
-  repeated string document_ids = 2;      // 要删除的文档ID列表
-  string user_id = 3;                    // 用户ID
+  repeated string document_ids = 1;      // 要删除的文档ID列表
+  string user_id = 2;                    // 用户ID
+  string scene_code = 3;                 // 场景编码（用于确定集合名称）
 }
 
 // 向量删除响应
@@ -68,22 +66,6 @@ message VectorDeleteResponse {
   int32 deleted_count = 1;               // 成功删除的文档数
   repeated string deleted_ids = 2;       // 删除的文档ID列表
   string error_message = 3;              // 错误信息(如果有)
-}
-
-// 集合信息请求
-message CollectionInfoRequest {
-  string collection_name = 1;            // 集合名称
-  string user_id = 2;                    // 用户ID
-}
-
-// 集合信息响应
-message CollectionInfoResponse {
-  string collection_name = 1;            // 集合名称
-  int32 document_count = 2;              // 文档数量
-  int32 vector_dimension = 3;            // 向量维度
-  string index_type = 4;                 // 索引类型
-  bool exists = 5;                       // 集合是否存在
-  string error_message = 6;              // 错误信息(如果有)
 }
 
 // 向量化文本请求
@@ -109,9 +91,6 @@ service BsRagService {
   
   // 删除向量文档
   rpc VectorDelete(VectorDeleteRequest) returns (VectorDeleteResponse);
-  
-  // 获取集合信息
-  rpc GetCollectionInfo(CollectionInfoRequest) returns (CollectionInfoResponse);
   
   // 向量化文本
   rpc VectorizeText(VectorizeTextRequest) returns (VectorizeTextResponse);

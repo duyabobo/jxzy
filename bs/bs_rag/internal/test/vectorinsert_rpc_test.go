@@ -22,33 +22,15 @@ func TestVectorInsert(t *testing.T) {
 	}
 	LogTestStart("TestVectorInsert", testParams)
 
-	// 首先检查集合是否存在
-	collectionReq := &bs_rag.CollectionInfoRequest{
-		CollectionName: "test_collection",
-		UserId:         "test_user_001",
-	}
-
-	collectionResp, err := ragServer.GetCollectionInfo(context.Background(), collectionReq)
-	if err != nil {
-		LogTestResult("TestVectorInsert", false, "Failed to get collection info: "+err.Error())
-		assert.Error(t, err)
-		return
-	}
-
-	if !collectionResp.Exists {
-		LogTestResult("TestVectorInsert", true, "Collection does not exist, skipping insert test")
-		return
-	}
-
-	// 创建测试文档，使用集合的实际维度
+	// 创建测试文档
 	documents := []*bs_rag.VectorDocument{
-		CreateTestVectorDocument("doc_001", int(collectionResp.VectorDimension)),
+		CreateTestVectorDocument("doc_001", int(consts.DashVectorDefaultDimension)),
 	}
 
 	req := &bs_rag.VectorInsertRequest{
-		CollectionName: "test_collection",
-		Documents:      documents,
-		UserId:         "test_user_001",
+		Documents: documents,
+		UserId:    "test_user_001",
+		SceneCode: "test_scene", // 测试场景编码
 	}
 
 	resp, err := ragServer.VectorInsert(context.Background(), req)

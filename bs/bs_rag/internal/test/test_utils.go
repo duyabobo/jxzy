@@ -114,21 +114,6 @@ func AssertVectorDeleteResponse(t *testing.T, resp *bs_rag.VectorDeleteResponse,
 	}
 }
 
-// AssertCollectionInfoResponse 验证集合信息响应
-func AssertCollectionInfoResponse(t *testing.T, resp *bs_rag.CollectionInfoResponse, expectedExists bool, expectNoError bool) {
-	assert.NotNil(t, resp)
-
-	if expectNoError {
-		assert.Equal(t, expectedExists, resp.Exists)
-		if expectedExists {
-			assert.NotEmpty(t, resp.CollectionName)
-			assert.GreaterOrEqual(t, resp.VectorDimension, int32(0))
-		}
-		assert.Empty(t, resp.ErrorMessage)
-	} else {
-		assert.NotEmpty(t, resp.ErrorMessage)
-	}
-}
 
 // LogTestStart 记录测试开始
 func LogTestStart(testName string, params map[string]interface{}) {

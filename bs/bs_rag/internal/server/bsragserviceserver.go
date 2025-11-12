@@ -40,12 +40,6 @@ func (s *BsRagServiceServer) VectorDelete(ctx context.Context, in *bs_rag.Vector
 	return l.VectorDelete(in)
 }
 
-// 获取集合信息
-func (s *BsRagServiceServer) GetCollectionInfo(ctx context.Context, in *bs_rag.CollectionInfoRequest) (*bs_rag.CollectionInfoResponse, error) {
-	l := logic.NewGetCollectionInfoLogic(ctx, s.svcCtx)
-	return l.GetCollectionInfo(in)
-}
-
 // 向量化文本
 func (s *BsRagServiceServer) VectorizeText(ctx context.Context, in *bs_rag.VectorizeTextRequest) (*bs_rag.VectorizeTextResponse, error) {
 	l := logic.NewVectorizeTextLogic(ctx, s.svcCtx)

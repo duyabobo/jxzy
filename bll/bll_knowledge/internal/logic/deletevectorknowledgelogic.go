@@ -8,7 +8,6 @@ import (
 	knowledgepb "jxzy/bll/bll_knowledge/bll_knowledge"
 	"jxzy/bll/bll_knowledge/internal/svc"
 	"jxzy/bs/bs_rag/bs_rag"
-	consts "jxzy/common/const"
 	"jxzy/common/logger"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -53,11 +52,19 @@ func (l *DeleteVectorKnowledgeLogic) DeleteVectorKnowledge(in *knowledgepb.Delet
 		}, nil
 	}
 
-	// 3. 调用RAG服务删除向量
+	// 3. 验证scene_code
+	if in.SceneCode == "" {
+		return &knowledgepb.DeleteVectorKnowledgeResponse{
+			Success: false,
+			Message: "scene_code不能为空",
+		}, nil
+	}
+
+	// 4. 调用RAG服务删除向量
 	ragReq := &bs_rag.VectorDeleteRequest{
-		CollectionName: consts.DefaultCollectionName,
-		DocumentIds:    []string{in.VectorId},
-		UserId:         in.UserId,
+		DocumentIds: []string{in.VectorId},
+		UserId:      in.UserId,
+		SceneCode:   in.SceneCode,
 	}
 
 	ragResp, err := l.svcCtx.RagRpc.VectorDelete(l.ctx, ragReq)
