@@ -9,6 +9,7 @@ type Config struct {
 	DashVector  DashVectorConfig  `json:"DashVector"`
 	Collections CollectionsConfig `json:"Collections"`
 	VectorDB    VectorDBConfig    `json:"VectorDB"`
+	EmbeddingModel EmbeddingModelConfig `json:"EmbeddingModel"`
 	Bailian     BailianConfig     `json:"Bailian"`
 }
 
@@ -43,6 +44,11 @@ type DashVectorConfig struct {
 type CollectionsConfig struct {
 	MaxCollections            int `json:"MaxCollections"`
 	MaxDocumentsPerCollection int `json:"MaxDocumentsPerCollection"`
+}
+
+type EmbeddingModelConfig struct {
+	Type   string                 `json:"Type"`   // 嵌入模型类型: bailian, mock
+	Config map[string]interface{} `json:"Config"` // 具体配置
 }
 
 type BailianConfig struct {

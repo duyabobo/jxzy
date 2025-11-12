@@ -49,6 +49,11 @@ VectorDB:
   Type: "dashvector"                  # 向量数据库类型: faiss, dashvector, milvus, pinecone, weaviate, mock
   Config: {}                         # 具体配置（mock 类型不需要配置）
 
+# 嵌入模型配置
+EmbeddingModel:
+  Type: "bailian"                     # 嵌入模型类型: bailian, mock
+  Config: {}                         # 具体配置
+
 # 百炼API配置（用于向量化）
 Bailian:
   APIKey: "sk-07b12c7d9c184d0296ee4d54f4eef551"  # 百炼API密钥，用于文本向量化
