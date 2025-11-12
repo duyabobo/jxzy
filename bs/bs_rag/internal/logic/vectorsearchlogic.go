@@ -39,9 +39,29 @@ func (l *VectorSearchLogic) VectorSearch(in *bs_rag.VectorSearchRequest) (*bs_ra
 		}, nil
 	}
 
+	if in.SceneCode == "" {
+		l.Logger.Errorf("SceneCode is required")
+		return &bs_rag.VectorSearchResponse{
+			Results:      []*bs_rag.VectorSearchResult{},
+			TotalCount:   0,
+			SearchTimeMs: 0,
+		}, nil
+	}
+
+	// 根据scene_code获取embedding provider
+	embeddingProvider, _, err := l.svcCtx.GetEmbeddingProvider(l.ctx, in.SceneCode)
+	if err != nil {
+		l.Logger.Errorf("Failed to get embedding provider for scene_code %s: %v", in.SceneCode, err)
+		return &bs_rag.VectorSearchResponse{
+			Results:      []*bs_rag.VectorSearchResult{},
+			TotalCount:   0,
+			SearchTimeMs: 0,
+		}, nil
+	}
+
 	// 自动生成查询向量
-	l.Logger.Infof("Generating query vector from text, length: %d", len(in.QueryText))
-	queryVector, err := l.svcCtx.EmbeddingService.GenerateEmbedding(in.QueryText)
+	l.Logger.Infof("Generating query vector from text, length: %d, scene_code: %s", len(in.QueryText), in.SceneCode)
+	queryVector, err := embeddingProvider.GenerateEmbedding(in.QueryText)
 	if err != nil {
 		l.Logger.Errorf("Failed to generate embedding for query text: %v", err)
 		return &bs_rag.VectorSearchResponse{

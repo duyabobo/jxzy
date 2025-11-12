@@ -43,6 +43,25 @@ func (l *VectorInsertLogic) VectorInsert(in *bs_rag.VectorInsertRequest) (*bs_ra
 		}, nil
 	}
 
+	if in.SceneCode == "" {
+		return &bs_rag.VectorInsertResponse{
+			InsertedCount: 0,
+			InsertedIds:   []string{},
+			ErrorMessage:  "scene_code is required",
+		}, nil
+	}
+
+	// 根据scene_code获取embedding provider
+	embeddingProvider, _, err := l.svcCtx.GetEmbeddingProvider(l.ctx, in.SceneCode)
+	if err != nil {
+		l.Logger.Errorf("Failed to get embedding provider for scene_code %s: %v", in.SceneCode, err)
+		return &bs_rag.VectorInsertResponse{
+			InsertedCount: 0,
+			InsertedIds:   []string{},
+			ErrorMessage:  fmt.Sprintf("获取embedding provider失败: %v", err),
+		}, nil
+	}
+
 	// 转换文档
 	documents := make([]types.Document, 0, len(in.Documents))
 	insertedIds := make([]string, 0, len(in.Documents))
@@ -55,8 +74,8 @@ func (l *VectorInsertLogic) VectorInsert(in *bs_rag.VectorInsertRequest) (*bs_ra
 		}
 
 		// 自动生成向量
-		l.Logger.Infof("Auto-generating vector for document id: %s, text length: %d", doc.Id, len(doc.Text))
-		vector, err := l.svcCtx.EmbeddingService.GenerateEmbedding(doc.Text)
+		l.Logger.Infof("Auto-generating vector for document id: %s, text length: %d, scene_code: %s", doc.Id, len(doc.Text), in.SceneCode)
+		vector, err := embeddingProvider.GenerateEmbedding(doc.Text)
 		if err != nil {
 			l.Logger.Errorf("Failed to generate embedding for document id %s: %v", doc.Id, err)
 			return &bs_rag.VectorInsertResponse{
@@ -85,7 +104,7 @@ func (l *VectorInsertLogic) VectorInsert(in *bs_rag.VectorInsertRequest) (*bs_ra
 	}
 
 	// 执行插入
-	err := l.svcCtx.VectorProvider.Insert(l.ctx, in.CollectionName, documents)
+	err = l.svcCtx.VectorProvider.Insert(l.ctx, in.CollectionName, documents)
 	if err != nil {
 		return &bs_rag.VectorInsertResponse{
 			InsertedCount: 0,

@@ -90,7 +90,7 @@ func (l *AddVectorKnowledgeLogic) AddVectorKnowledge(in *knowledgepb.AddVectorKn
 	}
 
 	// 3. 插入向量到RAG服务
-	return l.insertVectorsToRAG(fileMd5, documents, in.UserId)
+	return l.insertVectorsToRAG(fileMd5, documents, in.UserId, in.SceneCode)
 }
 
 // processFileUrlMode 处理文件URL模式
@@ -267,7 +267,7 @@ func (l *AddVectorKnowledgeLogic) insertSummaryToDocument(summary string, fileId
 }
 
 // insertVectorsToRAG 插入向量到RAG服务
-func (l *AddVectorKnowledgeLogic) insertVectorsToRAG(fileMd5 string, documents []*bs_rag.VectorDocument, userId string) (*knowledgepb.AddVectorKnowledgeResponse, error) {
+func (l *AddVectorKnowledgeLogic) insertVectorsToRAG(fileMd5 string, documents []*bs_rag.VectorDocument, userId string, sceneCode string) (*knowledgepb.AddVectorKnowledgeResponse, error) {
 	if len(documents) == 0 {
 		return &knowledgepb.AddVectorKnowledgeResponse{
 			VectorId: fileMd5,
@@ -285,10 +285,19 @@ func (l *AddVectorKnowledgeLogic) insertVectorsToRAG(fileMd5 string, documents [
 		}, nil
 	}
 
+	if sceneCode == "" {
+		return &knowledgepb.AddVectorKnowledgeResponse{
+			VectorId: fileMd5,
+			Success:  false,
+			Message:  "scene_code不能为空",
+		}, nil
+	}
+
 	ragReq := &bs_rag.VectorInsertRequest{
 		CollectionName: consts.DefaultCollectionName,
 		Documents:      documents,
 		UserId:         userId,
+		SceneCode:      sceneCode,
 	}
 	ragResp, err := l.svcCtx.RagRpc.VectorInsert(l.ctx, ragReq)
 	if err != nil {

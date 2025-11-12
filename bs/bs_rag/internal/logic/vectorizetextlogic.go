@@ -37,10 +37,27 @@ func (l *VectorizeTextLogic) VectorizeText(in *bs_rag.VectorizeTextRequest) (*bs
 		}, nil
 	}
 
-	l.Logger.Infof("Vectorizing text, length: %d", len(in.Text))
+	if in.SceneCode == "" {
+		return &bs_rag.VectorizeTextResponse{
+			Vector:       []float32{},
+			ErrorMessage: "scene_code不能为空",
+		}, nil
+	}
+
+	// 根据scene_code获取embedding provider
+	embeddingProvider, _, err := l.svcCtx.GetEmbeddingProvider(l.ctx, in.SceneCode)
+	if err != nil {
+		l.Logger.Errorf("Failed to get embedding provider for scene_code %s: %v", in.SceneCode, err)
+		return &bs_rag.VectorizeTextResponse{
+			Vector:       []float32{},
+			ErrorMessage: fmt.Sprintf("获取embedding provider失败: %v", err),
+		}, nil
+	}
+
+	l.Logger.Infof("Vectorizing text, length: %d, scene_code: %s", len(in.Text), in.SceneCode)
 
 	// 生成向量
-	vector, err := l.svcCtx.EmbeddingService.GenerateEmbedding(in.Text)
+	vector, err := embeddingProvider.GenerateEmbedding(in.Text)
 	if err != nil {
 		l.Logger.Errorf("Failed to generate embedding: %v", err)
 		return &bs_rag.VectorizeTextResponse{

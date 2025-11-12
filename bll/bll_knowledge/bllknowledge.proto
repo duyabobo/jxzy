@@ -19,6 +19,7 @@ message AddVectorKnowledgeRequest {
   repeated string segments = 3;        // 语义段片段列表（source_type为SEGMENTS时使用）
   repeated string summaries = 4;        // 摘要句列表（source_type为SUMMARIES时使用）
   string user_id = 5;                  // 用户ID
+  string scene_code = 6;               // 场景编码（用于确定使用的embedding模型）
 }
 
 message AddVectorKnowledgeResponse {

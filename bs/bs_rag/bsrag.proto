@@ -14,6 +14,7 @@ message VectorSearchRequest {
   string collection_name = 4;            // 集合名称
   map<string, string> filters = 5;       // 过滤条件
   string user_id = 6;                    // 用户ID
+  string scene_code = 7;                 // 场景编码（用于确定使用的embedding模型）
 }
 
 // 向量搜索结果
@@ -37,6 +38,7 @@ message VectorInsertRequest {
   string collection_name = 1;            // 集合名称
   repeated VectorDocument documents = 2; // 要插入的文档列表
   string user_id = 3;                    // 用户ID
+  string scene_code = 4;                 // 场景编码（用于确定使用的embedding模型）
 }
 
 // 向量文档
@@ -87,6 +89,7 @@ message CollectionInfoResponse {
 // 向量化文本请求
 message VectorizeTextRequest {
   string text = 1;                       // 要向量化的文本
+  string scene_code = 2;                 // 场景编码（用于确定使用的embedding模型）
 }
 
 // 向量化文本响应

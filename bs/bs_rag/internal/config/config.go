@@ -4,13 +4,12 @@ import "github.com/zeromicro/go-zero/zrpc"
 
 type Config struct {
 	zrpc.RpcServerConf
-	MySQL       MySQLConfig       `json:"MySQL"`
-	Faiss       FaissConfig       `json:"Faiss"`
-	DashVector  DashVectorConfig  `json:"DashVector"`
-	Collections CollectionsConfig `json:"Collections"`
-	VectorDB    VectorDBConfig    `json:"VectorDB"`
-	EmbeddingModel EmbeddingModelConfig `json:"EmbeddingModel"`
-	Bailian     BailianConfig     `json:"Bailian"`
+	MySQL       MySQLConfig              `json:"MySQL"`
+	Faiss       FaissConfig              `json:"Faiss"`
+	DashVector  DashVectorConfig         `json:"DashVector"`
+	Collections CollectionsConfig        `json:"Collections"`
+	VectorDB    VectorDBConfig           `json:"VectorDB"`
+	EmbeddingProviders map[string]EmbeddingProviderConfig `json:"EmbeddingProviders"` // provider_code -> provider config
 }
 
 type VectorDBConfig struct {
@@ -46,11 +45,13 @@ type CollectionsConfig struct {
 	MaxDocumentsPerCollection int `json:"MaxDocumentsPerCollection"`
 }
 
-type EmbeddingModelConfig struct {
-	Type   string                 `json:"Type"`   // 嵌入模型类型: bailian, mock
-	Config map[string]interface{} `json:"Config"` // 具体配置
+// EmbeddingProviderConfig 嵌入模型提供商配置
+type EmbeddingProviderConfig struct {
+	APIKey string `json:"APIKey"` // API密钥
+	// 可以添加其他提供商特定的配置字段
 }
 
+// BailianConfig 百炼配置（用于向后兼容factory）
 type BailianConfig struct {
 	APIKey string `json:"APIKey"`
 }
