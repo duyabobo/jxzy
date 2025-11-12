@@ -106,37 +106,45 @@ func (l *AddVectorKnowledgeLogic) AddVectorKnowledge(in *knowledgepb.AddVectorKn
 		}
 		segId, _ := segRes.LastInsertId()
 
-		// 6.1 为语义段生成摘要句
-		summary, err := l.summarizeSegmentWithLLM(seg, in.UserId)
-		if err != nil || strings.TrimSpace(summary) == "" {
+		// 6.1 为语义段生成多个维度的摘要句
+		summaries, err := l.summarizeSegmentWithLLM(seg, in.UserId)
+		if err != nil || len(summaries) == 0 {
 			l.Logger.Errorf("LLM summary failed for segment %d: %v", segId, err)
 			continue
 		}
-		sumMd5 := l.md5String(summary)
-		sumRec := &model.KnowledgeSummarySentence{
-			KnowledgeFileId:     fileId,
-			KnowledgeSegmentId:  segId,
-			SummarySentenceText: summary,
-			SummarySentenceMd5:  sumMd5,
-		}
-		sumRes, err := l.svcCtx.KnowledgeSummarySentenceModel.Insert(l.ctx, sumRec)
-		if err != nil {
-			l.Logger.Errorf("Insert knowledge_summary_sentence failed: %v", err)
-			continue
-		}
-		summaryId, _ := sumRes.LastInsertId()
 
-		// 6.2 构建RAG文档，Id使用摘要句入库id，内容使用摘要句
-		documents = append(documents, &bs_rag.VectorDocument{
-			Id:   fmt.Sprintf("%d", summaryId),
-			Text: summary,
-			Metadata: map[string]string{
-				"knowledge_file_id":    fmt.Sprintf("%d", fileId),
-				"knowledge_segment_id": fmt.Sprintf("%d", segId),
-				"user_id":              in.UserId,
-			},
-			Content: summary,
-		})
+		// 6.2 对每个摘要句进行循环处理：存储并构建RAG文档
+		for _, summary := range summaries {
+			summary = strings.TrimSpace(summary)
+			if summary == "" {
+				continue
+			}
+			sumMd5 := l.md5String(summary)
+			sumRec := &model.KnowledgeSummarySentence{
+				KnowledgeFileId:     fileId,
+				KnowledgeSegmentId:  segId,
+				SummarySentenceText: summary,
+				SummarySentenceMd5:  sumMd5,
+			}
+			sumRes, err := l.svcCtx.KnowledgeSummarySentenceModel.Insert(l.ctx, sumRec)
+			if err != nil {
+				l.Logger.Errorf("Insert knowledge_summary_sentence failed: %v", err)
+				continue
+			}
+			summaryId, _ := sumRes.LastInsertId()
+
+			// 6.3 构建RAG文档，Id使用摘要句入库id，内容使用摘要句
+			documents = append(documents, &bs_rag.VectorDocument{
+				Id:   fmt.Sprintf("%d", summaryId),
+				Text: summary,
+				Metadata: map[string]string{
+					"knowledge_file_id":    fmt.Sprintf("%d", fileId),
+					"knowledge_segment_id": fmt.Sprintf("%d", segId),
+					"user_id":              in.UserId,
+				},
+				Content: summary,
+			})
+		}
 	}
 
 	if len(documents) == 0 {
@@ -244,22 +252,35 @@ func (l *AddVectorKnowledgeLogic) segmentTextWithLLM(text string, userId string)
 	return cleaned, nil
 }
 
-// summarizeSegmentWithLLM 使用LLM为语义段生成摘要句
-func (l *AddVectorKnowledgeLogic) summarizeSegmentWithLLM(segment string, userId string) (string, error) {
+// summarizeSegmentWithLLM 使用LLM为语义段生成多个维度的摘要句
+func (l *AddVectorKnowledgeLogic) summarizeSegmentWithLLM(segment string, userId string) ([]string, error) {
 	if l.svcCtx.LlmRpc == nil {
-		return segment, nil
+		return []string{segment}, nil
 	}
 	req := &bsllm.LLMRequest{
 		SceneCode: "knowledge_segment_summary",
 		UserId:    userId,
 		Messages: []*bsllm.ChatMessage{
-			{Role: "system", Content: "请为以下文本生成一句话摘要，简洁、完整且可用于检索。直接返回摘要句。"},
+			{Role: "system", Content: "请为以下文本从多个维度生成一句话摘要，每个摘要句简洁、完整且可用于检索。每个摘要句占一行，直接返回摘要句，不要编号。"},
 			{Role: "user", Content: segment},
 		},
 	}
 	resp, err := l.svcCtx.LlmRpc.LLM(l.ctx, req)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return strings.TrimSpace(resp.Completion), nil
+	// 按行分割，去除空行
+	lines := strings.Split(resp.Completion, "\n")
+	summaries := make([]string, 0, len(lines))
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			summaries = append(summaries, line)
+		}
+	}
+	// 如果没有生成任何摘要，返回原始段落作为默认摘要
+	if len(summaries) == 0 {
+		summaries = []string{strings.TrimSpace(segment)}
+	}
+	return summaries, nil
 }
