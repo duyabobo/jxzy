@@ -54,81 +54,142 @@ func (l *AddVectorKnowledgeLogic) AddVectorKnowledge(in *knowledgepb.AddVectorKn
 		}, nil
 	}
 
-	var fileId int64 = 0
+	// 2. 根据source_type处理不同的模式
 	var fileMd5 string
-	var segments []string
+	var documents []*bs_rag.VectorDocument
 	var err error
 
-	// 根据source_type判断处理流程
-	if in.SourceType == knowledgepb.KnowledgeSourceType_SOURCE_TYPE_FILE_URL {
-		// 模式1: 通过OSS地址添加
-		// 2. 下载文件内容
-		fileBytes, fileName, fileType, fileSize, err := l.downloadFile(in.FileUrl)
-		if err != nil {
-			l.Logger.Errorf("Failed to download file: %v", err)
-			return &knowledgepb.AddVectorKnowledgeResponse{Success: false, Message: fmt.Sprintf("下载文件失败: %v", err)}, nil
-		}
-
-		// 3. 计算文件MD5并进行去重
-		fileMd5 = l.md5Bytes(fileBytes)
-		l.Logger.Infof("Computed file md5: %s (name=%s, size=%d, type=%s)", fileMd5, fileName, fileSize, fileType)
-
-		// 3.1 查询是否已存在
-		existing, _ := l.svcCtx.KnowledgeFileModel.FindOneByMd5(l.ctx, fileMd5)
-		if existing != nil {
-			l.Logger.Infof("File already processed, knowledge_file.id=%d", existing.Id)
-			return &knowledgepb.AddVectorKnowledgeResponse{VectorId: fileMd5, Success: true, Message: "文件已存在，跳过处理"}, nil
-		}
-
-		// 4. 入库 knowledge_file
-		kf := &model.KnowledgeFile{
-			OssPath:  in.FileUrl,
-			FileName: fileName,
-			FileSize: fileSize,
-			FileType: fileType,
-			FileMd5:  fileMd5,
-		}
-		res, err := l.svcCtx.KnowledgeFileModel.Insert(l.ctx, kf)
-		if err != nil {
-			l.Logger.Errorf("Insert knowledge_file failed: %v", err)
-			return &knowledgepb.AddVectorKnowledgeResponse{Success: false, Message: fmt.Sprintf("保存文件记录失败: %v", err)}, nil
-		}
-		fileId, _ = res.LastInsertId()
-
-		// 5. 利用LLM进行语义段拆分
-		segments, err = l.segmentTextWithLLM(string(fileBytes), in.UserId)
-		if err != nil {
-			l.Logger.Errorf("LLM segmentation failed: %v", err)
-			return &knowledgepb.AddVectorKnowledgeResponse{Success: false, Message: fmt.Sprintf("LLM拆分失败: %v", err)}, nil
-		}
-	} else if in.SourceType == knowledgepb.KnowledgeSourceType_SOURCE_TYPE_SEGMENTS {
-		// 模式2: 直接传入segments片段列表
-		segments = in.Segments
-		// 过滤空字符串
-		filtered := make([]string, 0, len(segments))
-		for _, seg := range segments {
-			seg = strings.TrimSpace(seg)
-			if seg != "" {
-				filtered = append(filtered, seg)
-			}
-		}
-		segments = filtered
-		if len(segments) == 0 {
-			return &knowledgepb.AddVectorKnowledgeResponse{Success: false, Message: "segments列表不能为空"}, nil
-		}
-		// fileId使用0标识，fileMd5使用segments的MD5组合
-		fileMd5 = l.md5String(strings.Join(segments, "\n"))
-		l.Logger.Infof("Using segments mode, segments count: %d, fileMd5: %s", len(segments), fileMd5)
-	} else {
-		return &knowledgepb.AddVectorKnowledgeResponse{Success: false, Message: fmt.Sprintf("不支持的source_type: %v", in.SourceType)}, nil
+	switch in.SourceType {
+	case knowledgepb.KnowledgeSourceType_SOURCE_TYPE_FILE_URL:
+		_, fileMd5, documents, err = l.processFileUrlMode(in)
+	case knowledgepb.KnowledgeSourceType_SOURCE_TYPE_SEGMENTS:
+		_, fileMd5, documents, err = l.processSegmentsMode(in)
+	case knowledgepb.KnowledgeSourceType_SOURCE_TYPE_SUMMARIES:
+		_, fileMd5, documents, err = l.processSummariesMode(in)
+	default:
+		return &knowledgepb.AddVectorKnowledgeResponse{
+			Success: false,
+			Message: fmt.Sprintf("不支持的source_type: %v", in.SourceType),
+		}, nil
 	}
 
-	// 6. 存储语义段，并为每个语义段生成摘要句后存储与入RAG
+	if err != nil {
+		// 处理文件已存在的情况
+		if strings.HasPrefix(err.Error(), "FILE_EXISTS:") {
+			fileMd5 := strings.TrimPrefix(err.Error(), "FILE_EXISTS:")
+			return &knowledgepb.AddVectorKnowledgeResponse{
+				VectorId: fileMd5,
+				Success:  true,
+				Message:  "文件已存在，跳过处理",
+			}, nil
+		}
+		return &knowledgepb.AddVectorKnowledgeResponse{
+			Success: false,
+			Message: err.Error(),
+		}, nil
+	}
+
+	// 3. 插入向量到RAG服务
+	return l.insertVectorsToRAG(fileMd5, documents, in.UserId)
+}
+
+// processFileUrlMode 处理文件URL模式
+func (l *AddVectorKnowledgeLogic) processFileUrlMode(in *knowledgepb.AddVectorKnowledgeRequest) (int64, string, []*bs_rag.VectorDocument, error) {
+	// 下载文件内容
+	fileBytes, fileName, fileType, fileSize, err := l.downloadFile(in.FileUrl)
+	if err != nil {
+		l.Logger.Errorf("Failed to download file: %v", err)
+		return 0, "", nil, fmt.Errorf("下载文件失败: %v", err)
+	}
+
+	// 计算文件MD5并进行去重
+	fileMd5 := l.md5Bytes(fileBytes)
+	l.Logger.Infof("Computed file md5: %s (name=%s, size=%d, type=%s)", fileMd5, fileName, fileSize, fileType)
+
+	// 查询是否已存在
+	existing, _ := l.svcCtx.KnowledgeFileModel.FindOneByMd5(l.ctx, fileMd5)
+	if existing != nil {
+		l.Logger.Infof("File already processed, knowledge_file.id=%d", existing.Id)
+		// 返回特殊错误，让调用者知道文件已存在
+		return 0, "", nil, fmt.Errorf("FILE_EXISTS:%s", fileMd5)
+	}
+
+	// 入库 knowledge_file
+	kf := &model.KnowledgeFile{
+		OssPath:  in.FileUrl,
+		FileName: fileName,
+		FileSize: fileSize,
+		FileType: fileType,
+		FileMd5:  fileMd5,
+	}
+	res, err := l.svcCtx.KnowledgeFileModel.Insert(l.ctx, kf)
+	if err != nil {
+		l.Logger.Errorf("Insert knowledge_file failed: %v", err)
+		return 0, "", nil, fmt.Errorf("保存文件记录失败: %v", err)
+	}
+	fileId, _ := res.LastInsertId()
+
+	// 利用LLM进行语义段拆分
+	segments, err := l.segmentTextWithLLM(string(fileBytes), in.UserId)
+	if err != nil {
+		l.Logger.Errorf("LLM segmentation failed: %v", err)
+		return 0, "", nil, fmt.Errorf("LLM拆分失败: %v", err)
+	}
+
+	// 处理segments并生成documents
+	documents := l.processSegmentsToDocuments(segments, fileId, in.UserId)
+	return fileId, fileMd5, documents, nil
+}
+
+// processSegmentsMode 处理segments模式
+func (l *AddVectorKnowledgeLogic) processSegmentsMode(in *knowledgepb.AddVectorKnowledgeRequest) (int64, string, []*bs_rag.VectorDocument, error) {
+	// 过滤空字符串
+	segments := l.filterEmptyStrings(in.Segments)
+	if len(segments) == 0 {
+		return 0, "", nil, fmt.Errorf("segments列表不能为空")
+	}
+
+	// fileId使用0标识，fileMd5使用segments的MD5组合
+	fileId := int64(0)
+	fileMd5 := l.md5String(strings.Join(segments, "\n"))
+	l.Logger.Infof("Using segments mode, segments count: %d, fileMd5: %s", len(segments), fileMd5)
+
+	// 处理segments并生成documents
+	documents := l.processSegmentsToDocuments(segments, fileId, in.UserId)
+	return fileId, fileMd5, documents, nil
+}
+
+// processSummariesMode 处理summaries模式
+func (l *AddVectorKnowledgeLogic) processSummariesMode(in *knowledgepb.AddVectorKnowledgeRequest) (int64, string, []*bs_rag.VectorDocument, error) {
+	// 过滤空字符串
+	summaries := l.filterEmptyStrings(in.Summaries)
+	if len(summaries) == 0 {
+		return 0, "", nil, fmt.Errorf("summaries列表不能为空")
+	}
+
+	// fileId和segId都使用0标识，fileMd5使用summaries的MD5组合
+	fileId := int64(0)
+	segId := int64(0)
+	fileMd5 := l.md5String(strings.Join(summaries, "\n"))
+	l.Logger.Infof("Using summaries mode, summaries count: %d, fileMd5: %s", len(summaries), fileMd5)
+
+	// 直接处理摘要句列表：存储并构建RAG文档
+	documents := l.processSummariesToDocuments(summaries, fileId, segId, in.UserId)
+	return fileId, fileMd5, documents, nil
+}
+
+// processSegmentsToDocuments 处理segments并生成documents
+func (l *AddVectorKnowledgeLogic) processSegmentsToDocuments(segments []string, fileId int64, userId string) []*bs_rag.VectorDocument {
 	var documents []*bs_rag.VectorDocument
+
 	for _, seg := range segments {
-		// 存储语义段到数据库（fileId可以为0）
+		// 存储语义段到数据库
 		segMd5 := l.md5String(seg)
-		segRec := &model.KnowledgeSegment{KnowledgeFileId: fileId, SegmentText: seg, SegmentMd5: segMd5}
+		segRec := &model.KnowledgeSegment{
+			KnowledgeFileId: fileId,
+			SegmentText:     seg,
+			SegmentMd5:      segMd5,
+		}
 		segRes, err := l.svcCtx.KnowledgeSegmentModel.Insert(l.ctx, segRec)
 		if err != nil {
 			l.Logger.Errorf("Insert knowledge_segment failed: %v", err)
@@ -136,64 +197,127 @@ func (l *AddVectorKnowledgeLogic) AddVectorKnowledge(in *knowledgepb.AddVectorKn
 		}
 		segId, _ := segRes.LastInsertId()
 
-		// 6.1 为语义段生成多个维度的摘要句
-		summaries, err := l.summarizeSegmentWithLLM(seg, in.UserId)
+		// 为语义段生成多个维度的摘要句
+		summaries, err := l.summarizeSegmentWithLLM(seg, userId)
 		if err != nil || len(summaries) == 0 {
 			l.Logger.Errorf("LLM summary failed for segment %d: %v", segId, err)
 			continue
 		}
 
-		// 6.2 对每个摘要句进行循环处理：存储并构建RAG文档
+		// 对每个摘要句进行处理：存储并构建RAG文档
 		for _, summary := range summaries {
-			summary = strings.TrimSpace(summary)
-			if summary == "" {
-				continue
+			doc := l.insertSummaryToDocument(summary, fileId, segId, userId)
+			if doc != nil {
+				documents = append(documents, doc)
 			}
-			// 存储摘要句到数据库（fileId可以为0）
-			sumMd5 := l.md5String(summary)
-			sumRec := &model.KnowledgeSummarySentence{
-				KnowledgeFileId:     fileId,
-				KnowledgeSegmentId:  segId,
-				SummarySentenceText: summary,
-				SummarySentenceMd5:  sumMd5,
-			}
-			sumRes, err := l.svcCtx.KnowledgeSummarySentenceModel.Insert(l.ctx, sumRec)
-			if err != nil {
-				l.Logger.Errorf("Insert knowledge_summary_sentence failed: %v", err)
-				continue
-			}
-			summaryId, _ := sumRes.LastInsertId()
-
-			// 6.3 构建RAG文档，Id使用摘要句入库id，内容使用摘要句
-			docId := fmt.Sprintf("%d", summaryId)
-			documents = append(documents, &bs_rag.VectorDocument{
-				Id:   docId,
-				Text: summary,
-				Metadata: map[string]string{
-					"knowledge_file_id":    fmt.Sprintf("%d", fileId),
-					"knowledge_segment_id": fmt.Sprintf("%d", segId),
-					"user_id":              in.UserId,
-				},
-				Content: summary,
-			})
 		}
 	}
 
-	// 7. 调用RAG服务插入向量（使用摘要句作为content/text）
-	if l.svcCtx.RagRpc == nil {
-		l.Logger.Error("RAG service is not available")
-		return &knowledgepb.AddVectorKnowledgeResponse{VectorId: fileMd5, Success: false, Message: "RAG服务不可用"}, nil
+	return documents
+}
+
+// processSummariesToDocuments 处理summaries并生成documents
+func (l *AddVectorKnowledgeLogic) processSummariesToDocuments(summaries []string, fileId, segId int64, userId string) []*bs_rag.VectorDocument {
+	var documents []*bs_rag.VectorDocument
+
+	for _, summary := range summaries {
+		doc := l.insertSummaryToDocument(summary, fileId, segId, userId)
+		if doc != nil {
+			documents = append(documents, doc)
+		}
 	}
 
-	ragReq := &bs_rag.VectorInsertRequest{CollectionName: consts.DefaultCollectionName, Documents: documents, UserId: in.UserId}
+	return documents
+}
+
+// insertSummaryToDocument 存储摘要句到数据库并构建RAG文档
+func (l *AddVectorKnowledgeLogic) insertSummaryToDocument(summary string, fileId, segId int64, userId string) *bs_rag.VectorDocument {
+	summary = strings.TrimSpace(summary)
+	if summary == "" {
+		return nil
+	}
+
+	// 存储摘要句到数据库
+	sumMd5 := l.md5String(summary)
+	sumRec := &model.KnowledgeSummarySentence{
+		KnowledgeFileId:     fileId,
+		KnowledgeSegmentId:  segId,
+		SummarySentenceText: summary,
+		SummarySentenceMd5:  sumMd5,
+	}
+	sumRes, err := l.svcCtx.KnowledgeSummarySentenceModel.Insert(l.ctx, sumRec)
+	if err != nil {
+		l.Logger.Errorf("Insert knowledge_summary_sentence failed: %v", err)
+		return nil
+	}
+	summaryId, _ := sumRes.LastInsertId()
+
+	// 构建RAG文档
+	docId := fmt.Sprintf("%d", summaryId)
+	return &bs_rag.VectorDocument{
+		Id:   docId,
+		Text: summary,
+		Metadata: map[string]string{
+			"knowledge_file_id":    fmt.Sprintf("%d", fileId),
+			"knowledge_segment_id": fmt.Sprintf("%d", segId),
+			"user_id":              userId,
+		},
+		Content: summary,
+	}
+}
+
+// insertVectorsToRAG 插入向量到RAG服务
+func (l *AddVectorKnowledgeLogic) insertVectorsToRAG(fileMd5 string, documents []*bs_rag.VectorDocument, userId string) (*knowledgepb.AddVectorKnowledgeResponse, error) {
+	if len(documents) == 0 {
+		return &knowledgepb.AddVectorKnowledgeResponse{
+			VectorId: fileMd5,
+			Success:  false,
+			Message:  "没有可插入的摘要文档",
+		}, nil
+	}
+
+	if l.svcCtx.RagRpc == nil {
+		l.Logger.Error("RAG service is not available")
+		return &knowledgepb.AddVectorKnowledgeResponse{
+			VectorId: fileMd5,
+			Success:  false,
+			Message:  "RAG服务不可用",
+		}, nil
+	}
+
+	ragReq := &bs_rag.VectorInsertRequest{
+		CollectionName: consts.DefaultCollectionName,
+		Documents:      documents,
+		UserId:         userId,
+	}
 	ragResp, err := l.svcCtx.RagRpc.VectorInsert(l.ctx, ragReq)
 	if err != nil {
 		l.Logger.Errorf("Failed to insert vectors to RAG service: %v", err)
-		return &knowledgepb.AddVectorKnowledgeResponse{VectorId: fileMd5, Success: false, Message: fmt.Sprintf("插入RAG失败: %v", err)}, nil
+		return &knowledgepb.AddVectorKnowledgeResponse{
+			VectorId: fileMd5,
+			Success:  false,
+			Message:  fmt.Sprintf("插入RAG失败: %v", err),
+		}, nil
 	}
-	l.Logger.Infof("Inserted %d documents to RAG", ragResp.InsertedCount)
 
-	return &knowledgepb.AddVectorKnowledgeResponse{VectorId: fileMd5, Success: true, Message: "知识库添加成功"}, nil
+	l.Logger.Infof("Inserted %d documents to RAG", ragResp.InsertedCount)
+	return &knowledgepb.AddVectorKnowledgeResponse{
+		VectorId: fileMd5,
+		Success:  true,
+		Message:  "知识库添加成功",
+	}, nil
+}
+
+// filterEmptyStrings 过滤空字符串
+func (l *AddVectorKnowledgeLogic) filterEmptyStrings(strs []string) []string {
+	filtered := make([]string, 0, len(strs))
+	for _, s := range strs {
+		s = strings.TrimSpace(s)
+		if s != "" {
+			filtered = append(filtered, s)
+		}
+	}
+	return filtered
 }
 
 // validateInput 验证输入参数
@@ -209,8 +333,12 @@ func (l *AddVectorKnowledgeLogic) validateInput(in *knowledgepb.AddVectorKnowled
 		if len(in.Segments) == 0 {
 			return fmt.Errorf("segments列表不能为空")
 		}
+	} else if in.SourceType == knowledgepb.KnowledgeSourceType_SOURCE_TYPE_SUMMARIES {
+		if len(in.Summaries) == 0 {
+			return fmt.Errorf("summaries列表不能为空")
+		}
 	} else {
-		return fmt.Errorf("source_type必须指定为FILE_URL或SEGMENTS")
+		return fmt.Errorf("source_type必须指定为FILE_URL、SEGMENTS或SUMMARIES")
 	}
 	return nil
 }

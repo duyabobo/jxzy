@@ -10,13 +10,15 @@ option go_package = "./bll_knowledge";
 enum KnowledgeSourceType {
   SOURCE_TYPE_FILE_URL = 0;           // 通过OSS地址添加
   SOURCE_TYPE_SEGMENTS = 1;           // 直接传入segments片段列表
+  SOURCE_TYPE_SUMMARIES = 2;          // 直接传入摘要句列表
 }
 
 message AddVectorKnowledgeRequest {
   KnowledgeSourceType source_type = 1; // 知识来源类型
   string file_url = 2;                 // 知识文件的OSS地址（source_type为FILE_URL时使用）
   repeated string segments = 3;        // 语义段片段列表（source_type为SEGMENTS时使用）
-  string user_id = 4;                  // 用户ID
+  repeated string summaries = 4;        // 摘要句列表（source_type为SUMMARIES时使用）
+  string user_id = 5;                  // 用户ID
 }
 
 message AddVectorKnowledgeResponse {
